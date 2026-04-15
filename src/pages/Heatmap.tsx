@@ -26,6 +26,7 @@ import { KpiCard } from '@/components/KpiCard';
 import { StateBadge, STATE_LEGEND_ITEMS } from '@/components/StateBadge';
 import { StatePicker } from '@/components/StatePicker';
 import { InitiativeDetail } from '@/components/InitiativeDetail';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import {
   getStartabilityScore,
@@ -278,12 +279,16 @@ export function Heatmap() {
                         )}
                       </span>
                       {teams.length > 1 && (
-                        <button
-                          onClick={() => removeTeam(team.id)}
-                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity absolute -right-1"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        <ConfirmDelete
+                          trigger={
+                            <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity absolute -right-1">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          }
+                          title={`Delete "${team.name}"?`}
+                          description="This will remove this team column from all initiatives. This action cannot be undone."
+                          onConfirm={() => removeTeam(team.id)}
+                        />
                       )}
                     </div>
                   </th>
@@ -365,40 +370,32 @@ export function Heatmap() {
                             ({themeInits.length})
                           </span>
                         </button>
-                        <button
-                          onClick={() => removeTheme(theme.id)}
-                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <ConfirmDelete
+                          trigger={
+                            <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          }
+                          title={`Delete "${theme.name}"?`}
+                          description="This will permanently delete this theme and all its initiatives. This action cannot be undone."
+                          onConfirm={() => removeTheme(theme.id)}
+                        />
                       </div>
                     </td>
                     {teams.map((team) => (
                       <td key={team.id} className="px-2 py-3 text-center h-12">
                         <div className="flex items-center justify-center h-6">
-                          {isCollapsed ? (
-                            <StateBadge
-                              state={getRollupState(themeLeaves, team.id)}
-                            />
-                          ) : (
-                            <span className="text-xs text-muted-foreground/40">
-                              —
-                            </span>
-                          )}
+                          <StateBadge
+                            state={getRollupState(themeLeaves, team.id)}
+                          />
                         </div>
                       </td>
                     ))}
                     <td className="h-12" />
                     <td className="px-2 py-3 text-center h-12">
                       <div className="flex flex-col items-center justify-center gap-1 h-6">
-                        {isCollapsed ? (
-                          <>
-                            <span className="text-xs font-bold">{avgScore}%</span>
-                            <Progress value={avgScore} className="h-1.5 w-12" />
-                          </>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/40">—</span>
-                        )}
+                        <span className="text-xs font-bold">{avgScore}%</span>
+                        <Progress value={avgScore} className="h-1.5 w-12" />
                       </div>
                     </td>
                   </tr>
@@ -447,15 +444,18 @@ export function Heatmap() {
                                 >
                                   <Pencil className="h-3 w-3" />
                                 </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeInitiative(init.id);
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
+                                <span onClick={(e) => e.stopPropagation()}>
+                                  <ConfirmDelete
+                                    trigger={
+                                      <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    }
+                                    title={`Delete "${init.name}"?`}
+                                    description="This will permanently delete this initiative. This action cannot be undone."
+                                    onConfirm={() => removeInitiative(init.id)}
+                                  />
+                                </span>
                               </>
                             )}
                           </div>

@@ -31,3 +31,9 @@ npm-debug.log*
 
 # Testing
 coverage/
+
+# Reference prototype
+Constraint-Lens/
+
+# TypeScript build info
+tsconfig.tsbuildinfo
