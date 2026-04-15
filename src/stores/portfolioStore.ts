@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Theme, Team, Initiative, FlowState, PortfolioState } from '@/types';
+import type { Theme, Team, Initiative, FlowState, Effort, PortfolioState } from '@/types';
 import { client } from '@/lib/amplifyClient';
 
 interface PortfolioStore extends PortfolioState {
@@ -12,6 +12,7 @@ interface PortfolioStore extends PortfolioState {
 
   // Initiative actions
   updateTeamState: (initiativeId: string, teamId: string, state: FlowState) => Promise<void>;
+  updateTeamEffort: (initiativeId: string, teamId: string, effort: Effort | null) => Promise<void>;
   addInitiative: (themeId: string, name: string, parentId?: string | null) => Promise<void>;
   removeInitiative: (id: string) => Promise<void>;
   renameInitiative: (id: string, name: string) => Promise<void>;
@@ -46,6 +47,7 @@ function toLocalInitiative(amplifyInit: {
   notes?: string | null;
   sequencingNotes?: string | null;
   teamStates?: unknown;
+  teamEfforts?: unknown;
 }): Initiative {
   let teamStates: Record<string, FlowState> = {};
   if (amplifyInit.teamStates) {
@@ -57,6 +59,16 @@ function toLocalInitiative(amplifyInit: {
       teamStates = {};
     }
   }
+  let teamEfforts: Record<string, Effort> = {};
+  if (amplifyInit.teamEfforts) {
+    try {
+      teamEfforts = typeof amplifyInit.teamEfforts === 'string'
+        ? JSON.parse(amplifyInit.teamEfforts)
+        : amplifyInit.teamEfforts as Record<string, Effort>;
+    } catch {
+      teamEfforts = {};
+    }
+  }
   return {
     id: amplifyInit.id,
     name: amplifyInit.name,
@@ -65,6 +77,7 @@ function toLocalInitiative(amplifyInit: {
     notes: amplifyInit.notes ?? '',
     sequencingNotes: amplifyInit.sequencingNotes ?? '',
     teamStates,
+    teamEfforts,
   };
 }
 
@@ -137,6 +150,31 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     }
   },
 
+  updateTeamEffort: async (initiativeId, teamId, effort) => {
+    const initiative = get().initiatives.find((i) => i.id === initiativeId);
+    if (!initiative) return;
+
+    let newTeamEfforts: Record<string, Effort>;
+    if (effort === null) {
+      // Remove effort
+      const { [teamId]: _, ...rest } = initiative.teamEfforts;
+      newTeamEfforts = rest;
+    } else {
+      newTeamEfforts = { ...initiative.teamEfforts, [teamId]: effort };
+    }
+
+    // Optimistic update
+    set((s) => ({
+      initiatives: s.initiatives.map((init) =>
+        init.id === initiativeId ? { ...init, teamEfforts: newTeamEfforts } : init
+      ),
+    }));
+
+    // Note: teamEfforts not yet persisted to AppSync - schema update needed
+    // For now, efforts are kept in local state only
+    console.log('Effort updated locally:', initiativeId, teamId, effort);
+  },
+
   addInitiative: async (themeId, name, parentId = null) => {
     const teams = get().teams;
     const defaultStates: Record<string, FlowState> = {};
@@ -152,6 +190,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         notes: '',
         sequencingNotes: '',
         teamStates: JSON.stringify(defaultStates),
+        // teamEfforts not in schema yet - will be added to local state
       });
 
       if (result.data) {
@@ -293,8 +332,9 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     set((s) => ({
       teams: s.teams.filter((t) => t.id !== id),
       initiatives: s.initiatives.map((init) => {
-        const { [id]: _, ...remainingStates } = init.teamStates;
-        return { ...init, teamStates: remainingStates };
+        const { [id]: _state, ...remainingStates } = init.teamStates;
+        const { [id]: _effort, ...remainingEfforts } = init.teamEfforts;
+        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts };
       }),
     }));
 
@@ -428,8 +468,9 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     set((s) => ({
       teams: s.teams.filter((t) => t.id !== id),
       initiatives: s.initiatives.map((init) => {
-        const { [id]: _, ...remainingStates } = init.teamStates;
-        return { ...init, teamStates: remainingStates };
+        const { [id]: _state, ...remainingStates } = init.teamStates;
+        const { [id]: _effort, ...remainingEfforts } = init.teamEfforts;
+        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts };
       }),
     }));
   },

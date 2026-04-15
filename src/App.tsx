@@ -7,7 +7,7 @@ import { ConstraintLens } from '@/pages/ConstraintLens';
 import { Simulator } from '@/pages/Simulator';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { client } from '@/lib/amplifyClient';
-import type { Theme, Team, Initiative, FlowState } from '@/types';
+import type { Theme, Team, Initiative, FlowState, Effort } from '@/types';
 
 function App() {
   const loadPortfolio = usePortfolioStore((s) => s.loadPortfolio);
@@ -41,6 +41,17 @@ function App() {
               teamStates = {};
             }
           }
+          let teamEfforts: Record<string, Effort> = {};
+          if ((data as { teamEfforts?: unknown }).teamEfforts) {
+            try {
+              const effortsData = (data as { teamEfforts?: unknown }).teamEfforts;
+              teamEfforts = typeof effortsData === 'string'
+                ? JSON.parse(effortsData)
+                : effortsData as Record<string, Effort>;
+            } catch {
+              teamEfforts = {};
+            }
+          }
           const initiative: Initiative = {
             id: data.id,
             name: data.name,
@@ -49,6 +60,7 @@ function App() {
             notes: data.notes ?? '',
             sequencingNotes: data.sequencingNotes ?? '',
             teamStates,
+            teamEfforts,
           };
           _applyInitiativeUpdate(initiative);
         }
@@ -69,6 +81,17 @@ function App() {
               teamStates = {};
             }
           }
+          let teamEfforts: Record<string, Effort> = {};
+          if ((data as { teamEfforts?: unknown }).teamEfforts) {
+            try {
+              const effortsData = (data as { teamEfforts?: unknown }).teamEfforts;
+              teamEfforts = typeof effortsData === 'string'
+                ? JSON.parse(effortsData)
+                : effortsData as Record<string, Effort>;
+            } catch {
+              teamEfforts = {};
+            }
+          }
           const initiative: Initiative = {
             id: data.id,
             name: data.name,
@@ -77,6 +100,7 @@ function App() {
             notes: data.notes ?? '',
             sequencingNotes: data.sequencingNotes ?? '',
             teamStates,
+            teamEfforts,
           };
           _applyInitiativeUpdate(initiative);
         }

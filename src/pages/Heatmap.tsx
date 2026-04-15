@@ -37,7 +37,7 @@ import {
   getAverageStartability,
 } from '@/lib/metrics';
 import { cn } from '@/lib/utils';
-import type { Initiative } from '@/types';
+import type { Initiative, Effort } from '@/types';
 
 // Inline input component for adding items
 function InlineInput({
@@ -107,6 +107,7 @@ export function Heatmap() {
     teams,
     initiatives,
     updateTeamState,
+    updateTeamEffort,
     addInitiative,
     removeInitiative,
     renameInitiative,
@@ -469,8 +470,12 @@ export function Heatmap() {
                             <div className="flex items-center justify-center h-6">
                               <StatePicker
                                 value={init.teamStates[team.id] ?? 'NOT_STARTED'}
+                                effort={init.teamEfforts[team.id]}
                                 onChange={(state) =>
                                   updateTeamState(init.id, team.id, state)
+                                }
+                                onEffortChange={(effort: Effort | null) =>
+                                  updateTeamEffort(init.id, team.id, effort)
                                 }
                               />
                             </div>

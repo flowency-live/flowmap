@@ -1,4 +1,4 @@
-import type { PortfolioState, Theme, Team, Initiative, FlowState } from '@/types';
+import type { PortfolioState, Theme, Team, Initiative, FlowState, Effort } from '@/types';
 
 /**
  * Mock data for development
@@ -35,6 +35,12 @@ const createTeamStates = (
   return { ...defaultStates, ...states };
 };
 
+const createTeamEfforts = (
+  efforts: Record<string, Effort>
+): Record<string, Effort> => {
+  return { ...efforts };
+};
+
 export const mockInitiatives: Initiative[] = [
   // NatWest Initiatives
   {
@@ -52,6 +58,11 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'NA',
       'team-dataen': 'NA',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '3w',
+      'team-upc': '2w',
+      'team-ember': '1w',
+    }),
   },
   {
     id: 'init-nw-2',
@@ -68,6 +79,10 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'NA',
       'team-dataen': 'NA',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '4w',
+      'team-ember': '2w',
+    }),
   },
   {
     id: 'init-nw-3',
@@ -83,6 +98,12 @@ export const mockInitiatives: Initiative[] = [
       'team-logan': 'READY',
       'team-dataan': 'IN_FLIGHT',
       'team-dataen': 'NA',
+    }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '2w',
+      'team-upc': '1w',
+      'team-logan': '3d',
+      'team-dataan': '1w',
     }),
   },
 
@@ -102,6 +123,13 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'DONE',
       'team-dataen': 'IN_FLIGHT',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '5w',
+      'team-upc': '3w',
+      'team-ember': '2w',
+      'team-logan': '1w',
+      'team-dataen': '4w',
+    }),
   },
   {
     id: 'init-ms-2',
@@ -118,6 +146,14 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'DONE',
       'team-dataen': 'DONE',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '2w',
+      'team-upc': '2w',
+      'team-ember': '1w',
+      'team-logan': '1w',
+      'team-dataan': '3w',
+      'team-dataen': '2w',
+    }),
   },
   {
     id: 'init-ms-3',
@@ -133,6 +169,9 @@ export const mockInitiatives: Initiative[] = [
       'team-logan': 'IN_DISCOVERY',
       'team-dataan': 'NA',
       'team-dataen': 'NA',
+    }),
+    teamEfforts: createTeamEfforts({
+      'team-logan': '1d',
     }),
   },
 
@@ -152,6 +191,13 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'IN_FLIGHT',
       'team-dataen': 'READY',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '6w',
+      'team-upc': '4w',
+      'team-ember': '2w',
+      'team-dataan': '3w',
+      'team-dataen': '2w',
+    }),
   },
   {
     id: 'init-lbg-2',
@@ -168,6 +214,10 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'IN_FLIGHT',
       'team-dataen': 'IN_DISCOVERY',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-dataan': '8w',
+      'team-dataen': '10w',
+    }),
   },
   {
     id: 'init-lbg-3',
@@ -183,6 +233,11 @@ export const mockInitiatives: Initiative[] = [
       'team-logan': 'NOT_STARTED',
       'team-dataan': 'NA',
       'team-dataen': 'NA',
+    }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '1w',
+      'team-upc': '3d',
+      'team-ember': '1d',
     }),
   },
 
@@ -202,6 +257,10 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'READY',
       'team-dataen': 'NOT_STARTED',
     }),
+    teamEfforts: createTeamEfforts({
+      'team-ember': '2w',
+      'team-dataan': '4w',
+    }),
   },
   {
     id: 'init-av-2',
@@ -217,6 +276,12 @@ export const mockInitiatives: Initiative[] = [
       'team-logan': 'UAT',
       'team-dataan': 'NA',
       'team-dataen': 'NA',
+    }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '3w',
+      'team-upc': '2w',
+      'team-ember': '2w',
+      'team-logan': '1w',
     }),
   },
   {
@@ -234,6 +299,7 @@ export const mockInitiatives: Initiative[] = [
       'team-dataan': 'IN_DISCOVERY',
       'team-dataen': 'NOT_STARTED',
     }),
+    teamEfforts: createTeamEfforts({}),
   },
   {
     id: 'init-av-4',
@@ -249,6 +315,13 @@ export const mockInitiatives: Initiative[] = [
       'team-logan': 'READY',
       'team-dataan': 'DONE',
       'team-dataen': 'IN_FLIGHT',
+    }),
+    teamEfforts: createTeamEfforts({
+      'team-upj': '2w',
+      'team-upc': '3w',
+      'team-ember': '2w',
+      'team-logan': '1w',
+      'team-dataen': '4w',
     }),
   },
 ];

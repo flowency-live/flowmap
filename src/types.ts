@@ -24,6 +24,35 @@ export interface Team {
   isPrimaryConstraint: boolean;
 }
 
+export type Effort =
+  | '1d'
+  | '3d'
+  | '1w'
+  | '2w'
+  | '3w'
+  | '4w'
+  | '5w'
+  | '6w'
+  | '7w'
+  | '8w'
+  | '9w'
+  | '10w';
+
+export const EFFORT_OPTIONS: { value: Effort; label: string }[] = [
+  { value: '1d', label: '1 day' },
+  { value: '3d', label: '3 days' },
+  { value: '1w', label: '1 week' },
+  { value: '2w', label: '2 weeks' },
+  { value: '3w', label: '3 weeks' },
+  { value: '4w', label: '4 weeks' },
+  { value: '5w', label: '5 weeks' },
+  { value: '6w', label: '6 weeks' },
+  { value: '7w', label: '7 weeks' },
+  { value: '8w', label: '8 weeks' },
+  { value: '9w', label: '9 weeks' },
+  { value: '10w', label: '10 weeks' },
+];
+
 export interface Initiative {
   id: string;
   name: string;
@@ -32,6 +61,7 @@ export interface Initiative {
   notes: string;
   sequencingNotes: string;
   teamStates: Record<string, FlowState>; // teamId -> state
+  teamEfforts: Record<string, Effort>; // teamId -> effort
 }
 
 export interface PortfolioState {
