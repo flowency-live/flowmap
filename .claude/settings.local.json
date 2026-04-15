@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(dir:*)",
+      "Bash(timeout 60 tail:*)",
+      "Bash(pnpm build:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vite build:*)",
+      "Bash(cmd /c \"rmdir /s /q node_modules 2>nul & del package-lock.json 2>nul & npm install\")",
+      "Bash(powershell:*)",
+      "Bash(timeout:*)",
+      "Bash(npx vite:*)",
+      "Bash(ping:*)",
+      "Bash(npx ampx sandbox:*)"
+    ]
+  }
+}
