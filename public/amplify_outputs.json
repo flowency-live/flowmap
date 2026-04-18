@@ -1,8 +1,8 @@
 {
   "data": {
-    "url": "https://6qqdrwft6vdrhf7baseoyz3boy.appsync-api.eu-west-2.amazonaws.com/graphql",
+    "url": "https://ajcgb7tfxngcbn4sof5hj6cjg4.appsync-api.eu-west-2.amazonaws.com/graphql",
     "aws_region": "eu-west-2",
-    "api_key": "da2-xman7ssm7bb4rjj4qux3yuvcpm",
+    "api_key": "da2-2dcbnjh4v5evnbaaamq6lb3fci",
     "default_authorization_type": "API_KEY",
     "authorization_types": [
       "AWS_IAM"
@@ -206,6 +206,27 @@
               "name": "parentId",
               "isArray": false,
               "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "order": {
+              "name": "order",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            },
+            "liveDate": {
+              "name": "liveDate",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "dueDate": {
+              "name": "dueDate",
+              "isArray": false,
+              "type": "String",
               "isRequired": false,
               "attributes": []
             },
