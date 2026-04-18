@@ -4,11 +4,11 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
  * FlowMap Data Schema
  *
  * Models:
- * - Theme: Portfolio groupings (e.g., "NatWest", "M&S")
- * - Team: Delivery teams (e.g., "UPJ", "UPC")
+ * - Theme: Portfolio groupings (e.g., "M&S Onboarding", "NatWest Onboarding")
+ * - Team: Delivery teams (UPJ, UIE, UNC, Logan, DataE, DataS)
  * - Initiative: Work items with team-specific flow states
  *
- * Flow States: NOT_STARTED | IN_DISCOVERY | READY | IN_FLIGHT | UAT | DONE | NA
+ * Flow States: N/A | N/S | Discovery | Ready | Constrained | Doing | Done | Blocked
  *
  * Real-time: Subscriptions auto-generated for all mutations
  */
@@ -36,8 +36,12 @@ const schema = a.schema({
   /**
    * Initiative - Work item tracked across teams
    *
-   * teamStates is stored as JSON string: {"team-id-1": "READY", "team-id-2": "IN_FLIGHT"}
+   * teamStates is stored as JSON string: {"team-id-1": "Ready", "team-id-2": "Doing"}
    * This allows flexible per-team state tracking without a separate join table.
+   *
+   * Dates:
+   * - liveDate: Go-live date for parent initiatives (e.g., "LIVE 29th June")
+   * - dueDate: UAT delivery date for child items (e.g., "15th May")
    */
   Initiative: a
     .model({
@@ -45,6 +49,8 @@ const schema = a.schema({
       themeId: a.id().required(),
       theme: a.belongsTo('Theme', 'themeId'),
       parentId: a.id(),
+      liveDate: a.string(), // Go-live date for parent initiatives
+      dueDate: a.string(), // UAT delivery date for child items
       notes: a.string().default(''),
       sequencingNotes: a.string().default(''),
       teamStates: a.json(), // JSON string of Record<teamId, FlowState>

@@ -34,14 +34,7 @@
   --color-sidebar-accent: hsl(var(--sidebar-accent));
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
 
-  /* State Colors */
-  --color-state-not-started: hsl(var(--state-not-started));
-  --color-state-discovery: hsl(var(--state-discovery));
-  --color-state-ready: hsl(var(--state-ready));
-  --color-state-in-flight: hsl(var(--state-in-flight));
-  --color-state-uat: hsl(var(--state-uat));
-  --color-state-done: hsl(var(--state-done));
-  --color-state-na: hsl(var(--state-na));
+  /* State colors are defined in src/types.ts STATE_CONFIG using hex values */
 
   --font-sans: var(--app-font-sans);
   --font-display: var(--app-font-display);
@@ -92,15 +85,6 @@
   --sidebar-border: 217 33% 17%;
   --sidebar-accent: 217 33% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
-
-  /* FlowMap State Colors */
-  --state-not-started: 350 84% 60%;     /* Rose - attention needed */
-  --state-discovery: 217 91% 60%;       /* Blue - active learning */
-  --state-ready: 168 84% 42%;           /* Teal - ready to go */
-  --state-in-flight: 263 70% 58%;       /* Violet - in progress */
-  --state-uat: 43 96% 56%;              /* Amber - testing */
-  --state-done: 152 69% 48%;            /* Emerald - complete */
-  --state-na: 220 14% 80%;              /* Slate - not applicable */
 
   --radius: 0.5rem;
 }

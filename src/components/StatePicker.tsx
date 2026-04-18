@@ -57,7 +57,7 @@ export function StatePicker({
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          <StateBadge state={value} />
+          <StateBadge state={value} size="lg" />
           {effort && (
             <span className="text-[10px] font-medium text-muted-foreground">
               {effort}

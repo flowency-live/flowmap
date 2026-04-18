@@ -1,10 +1,10 @@
 /**
  * Seed Script for FlowMap
  *
- * Seeds the database with initial data:
- * - 4 Themes (NatWest, M&S, LBG, Aviva)
- * - 6 Teams (UPJ, UPC, Ember, Logan, DataAn, DataEn)
- * - Sample initiatives with flow states
+ * Seeds the database with data from roadmap.json:
+ * - 1 Theme (Portfolio)
+ * - 6 Teams (UPJ, UIE, UNC, Logan, DataE, DataS)
+ * - 9 Parent initiatives with 35 child items
  *
  * Run with: npx tsx scripts/seed.ts
  */
@@ -12,6 +12,7 @@
 import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../amplify/data/resource';
+import roadmapData from '../.documentation/roadmap.json';
 
 // Load Amplify configuration
 import outputs from '../amplify_outputs.json';
@@ -20,13 +21,27 @@ Amplify.configure(outputs);
 const client = generateClient<Schema>();
 
 type FlowState =
-  | 'NOT_STARTED'
-  | 'IN_DISCOVERY'
-  | 'READY'
-  | 'IN_FLIGHT'
-  | 'UAT'
-  | 'DONE'
-  | 'NA';
+  | 'N/A'
+  | 'N/S'
+  | 'Discovery'
+  | 'Ready'
+  | 'Constrained'
+  | 'Doing'
+  | 'Done'
+  | 'Blocked';
+
+interface RoadmapChild {
+  name: string;
+  due_date: string | null;
+  status_by_team: Record<string, string | null>;
+}
+
+interface RoadmapInitiative {
+  name: string;
+  due_date: string | null;
+  rollup_by_team: Record<string, string | null>;
+  children: RoadmapChild[];
+}
 
 async function clearExistingData() {
   console.log('Clearing existing data...');
@@ -52,34 +67,24 @@ async function clearExistingData() {
   console.log('Existing data cleared.');
 }
 
-async function seedThemes() {
-  console.log('Creating themes...');
+async function seedTheme() {
+  console.log('Creating theme...');
 
-  const themeNames = ['NatWest', 'M&S', 'LBG', 'Aviva'];
-  const themes: Schema['Theme']['type'][] = [];
-
-  for (const name of themeNames) {
-    const { data } = await client.models.Theme.create({ name });
-    if (data) {
-      themes.push(data);
-      console.log(`  Created theme: ${name}`);
-    }
+  const { data } = await client.models.Theme.create({ name: 'Portfolio' });
+  if (data) {
+    console.log(`  Created theme: Portfolio`);
+    return data;
   }
-
-  return themes;
+  throw new Error('Failed to create theme');
 }
 
 async function seedTeams() {
   console.log('Creating teams...');
 
-  const teamData = [
-    { name: 'UPJ', isPrimaryConstraint: true },
-    { name: 'UPC', isPrimaryConstraint: false },
-    { name: 'Ember', isPrimaryConstraint: false },
-    { name: 'Logan', isPrimaryConstraint: false },
-    { name: 'DataAn', isPrimaryConstraint: false },
-    { name: 'DataEn', isPrimaryConstraint: false },
-  ];
+  const teamData = roadmapData.model.teams.map((team) => ({
+    name: team.id,
+    isPrimaryConstraint: team.id === 'UPJ', // UPJ is typically the constraint
+  }));
 
   const teams: Schema['Team']['type'][] = [];
 
@@ -94,154 +99,96 @@ async function seedTeams() {
   return teams;
 }
 
-function createTeamStates(
-  teamIds: string[],
-  states: Partial<Record<string, FlowState>> = {}
-): string {
-  const defaultStates: Record<string, FlowState> = {};
-  for (const id of teamIds) {
-    defaultStates[id] = states[id] ?? 'NOT_STARTED';
+function normalizeStatus(status: string | null): FlowState {
+  if (status === null || status === undefined) return 'N/A';
+  // Status values from JSON match our FlowState type
+  const validStates: FlowState[] = ['N/A', 'N/S', 'Discovery', 'Ready', 'Constrained', 'Doing', 'Done', 'Blocked'];
+  if (validStates.includes(status as FlowState)) {
+    return status as FlowState;
   }
-  return JSON.stringify(defaultStates);
+  return 'N/A';
+}
+
+function createTeamStates(
+  teams: Schema['Team']['type'][],
+  statusByTeam: Record<string, string | null>
+): string {
+  const states: Record<string, FlowState> = {};
+  for (const team of teams) {
+    // Map team name to status from roadmap (team names in roadmap are: UPJ, UIE, UNC, Logan, DataE, DataS)
+    const status = statusByTeam[team.name];
+    states[team.id] = normalizeStatus(status);
+  }
+  return JSON.stringify(states);
 }
 
 async function seedInitiatives(
-  themes: Schema['Theme']['type'][],
+  theme: Schema['Theme']['type'],
   teams: Schema['Team']['type'][]
 ) {
   console.log('Creating initiatives...');
 
-  const teamIds = teams.map((t) => t.id);
-  const [natwest, mands, lbg, aviva] = themes;
+  const initiatives = roadmapData.initiatives as RoadmapInitiative[];
+  let parentCount = 0;
+  let childCount = 0;
 
-  // NatWest initiatives
-  const natwestInitiatives = [
-    {
-      name: 'Customer Portal Redesign',
-      themeId: natwest!.id,
-      notes: 'High priority for Q2. Dependencies on API team.',
-      sequencingNotes: 'Must complete API changes first',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'READY',
-        [teamIds[1]!]: 'IN_FLIGHT',
-        [teamIds[2]!]: 'IN_DISCOVERY',
-      }),
-    },
-    {
-      name: 'API Modernization',
-      themeId: natwest!.id,
-      notes: 'Backend team leading this initiative',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'NOT_STARTED',
-        [teamIds[1]!]: 'READY',
-      }),
-    },
-    {
-      name: 'Mobile App Launch',
-      themeId: natwest!.id,
+  for (const initiative of initiatives) {
+    // Create parent initiative
+    const parentData = {
+      name: initiative.name,
+      themeId: theme.id,
+      liveDate: initiative.due_date || undefined,
       notes: '',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'IN_FLIGHT',
-        [teamIds[1]!]: 'IN_FLIGHT',
-        [teamIds[2]!]: 'UAT',
-      }),
-    },
-  ];
+      sequencingNotes: '',
+      teamStates: createTeamStates(teams, initiative.rollup_by_team),
+    };
 
-  // M&S initiatives
-  const mandsInitiatives = [
-    {
-      name: 'Loyalty Program Integration',
-      themeId: mands!.id,
-      notes: 'Integration with existing loyalty platform',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'READY',
-        [teamIds[3]!]: 'IN_DISCOVERY',
-      }),
-    },
-    {
-      name: 'Payment Gateway Upgrade',
-      themeId: mands!.id,
-      notes: 'Security compliance requirement',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'NOT_STARTED',
-        [teamIds[1]!]: 'NOT_STARTED',
-        [teamIds[4]!]: 'READY',
-      }),
-    },
-  ];
+    const { data: parentResult } = await client.models.Initiative.create(parentData);
+    if (!parentResult) {
+      console.error(`  Failed to create parent: ${initiative.name}`);
+      continue;
+    }
+    parentCount++;
+    console.log(`  Created parent: ${initiative.name}`);
 
-  // LBG initiatives
-  const lbgInitiatives = [
-    {
-      name: 'Risk Dashboard',
-      themeId: lbg!.id,
-      notes: 'Real-time risk monitoring',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[4]!]: 'IN_FLIGHT',
-        [teamIds[5]!]: 'IN_FLIGHT',
-      }),
-    },
-    {
-      name: 'Compliance Reporting',
-      themeId: lbg!.id,
-      notes: 'Regulatory requirement - Q3 deadline',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'DONE',
-        [teamIds[4]!]: 'UAT',
-        [teamIds[5]!]: 'IN_FLIGHT',
-      }),
-    },
-  ];
+    // Create child initiatives
+    for (const child of initiative.children) {
+      const childData = {
+        name: child.name,
+        themeId: theme.id,
+        parentId: parentResult.id,
+        dueDate: child.due_date && child.due_date !== '-' ? child.due_date : undefined,
+        notes: '',
+        sequencingNotes: '',
+        teamStates: createTeamStates(teams, child.status_by_team),
+      };
 
-  // Aviva initiatives
-  const avivaInitiatives = [
-    {
-      name: 'Claims Automation',
-      themeId: aviva!.id,
-      notes: 'AI-powered claims processing',
-      teamStates: createTeamStates(teamIds, {
-        [teamIds[0]!]: 'IN_DISCOVERY',
-        [teamIds[2]!]: 'NOT_STARTED',
-      }),
-    },
-    {
-      name: 'Customer Self-Service Portal',
-      themeId: aviva!.id,
-      notes: '',
-      teamStates: createTeamStates(teamIds),
-    },
-  ];
-
-  const allInitiatives = [
-    ...natwestInitiatives,
-    ...mandsInitiatives,
-    ...lbgInitiatives,
-    ...avivaInitiatives,
-  ];
-
-  for (const initiative of allInitiatives) {
-    const { data } = await client.models.Initiative.create(initiative);
-    if (data) {
-      console.log(`  Created initiative: ${initiative.name}`);
+      const { data: childResult } = await client.models.Initiative.create(childData);
+      if (childResult) {
+        childCount++;
+        console.log(`    - ${child.name}`);
+      }
     }
   }
+
+  return { parentCount, childCount };
 }
 
 async function seed() {
-  console.log('\n🌱 Starting FlowMap seed...\n');
+  console.log('\n🌱 Starting FlowMap seed from roadmap.json...\n');
 
   try {
     await clearExistingData();
-    const themes = await seedThemes();
+    const theme = await seedTheme();
     const teams = await seedTeams();
-    await seedInitiatives(themes, teams);
+    const { parentCount, childCount } = await seedInitiatives(theme, teams);
 
     console.log('\n✅ Seed completed successfully!\n');
     console.log('Summary:');
-    console.log(`  - ${themes.length} themes`);
+    console.log(`  - 1 theme (Portfolio)`);
     console.log(`  - ${teams.length} teams`);
-    console.log('  - 9 initiatives');
+    console.log(`  - ${parentCount} parent initiatives`);
+    console.log(`  - ${childCount} child items`);
   } catch (error) {
     console.error('\n❌ Seed failed:', error);
     process.exit(1);

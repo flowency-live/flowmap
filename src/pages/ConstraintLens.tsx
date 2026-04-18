@@ -35,7 +35,7 @@ export function ConstraintLens() {
   const downstreamWaitingCount = queuedInitiatives.reduce((acc, init) => {
     let waitingInInit = 0;
     Object.entries(init.teamStates).forEach(([teamId, state]) => {
-      if (teamId !== selectedTeamId && state === 'READY') {
+      if (teamId !== selectedTeamId && state === 'Ready') {
         waitingInInit++;
       }
     });
@@ -132,7 +132,7 @@ export function ConstraintLens() {
                         <span className="text-xs text-muted-foreground uppercase">
                           {selectedTeam?.name} State:
                         </span>
-                        <StateBadge state={init.teamStates[selectedTeamId] ?? 'NOT_STARTED'} />
+                        <StateBadge state={init.teamStates[selectedTeamId] ?? 'N/S'} />
                       </div>
                     </div>
                   </div>

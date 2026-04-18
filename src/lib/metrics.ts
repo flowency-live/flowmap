@@ -1,14 +1,14 @@
 import type { Initiative, FlowState } from '@/types';
-import { ENGAGED_STATES } from '@/types';
+import { ENGAGED_STATES, ROLLUP_PRIORITY } from '@/types';
 
 /**
  * Calculate startability score for an initiative
- * Returns percentage of required teams that are engaged (not NA and not NOT_STARTED)
+ * Returns percentage of required teams that are engaged (not N/A and not N/S)
  */
 export function getStartabilityScore(initiative: Initiative): number {
   const teamIds = Object.keys(initiative.teamStates);
   const requiredTeams = teamIds.filter(
-    (teamId) => initiative.teamStates[teamId] !== 'NA'
+    (teamId) => initiative.teamStates[teamId] !== 'N/A'
   );
 
   if (requiredTeams.length === 0) return 0;
@@ -22,33 +22,33 @@ export function getStartabilityScore(initiative: Initiative): number {
 }
 
 /**
- * Check if initiative has zero engagement (all required teams are NOT_STARTED)
+ * Check if initiative has zero engagement (all required teams are N/S)
  */
 export function isZeroEngagement(initiative: Initiative): boolean {
   const teamIds = Object.keys(initiative.teamStates);
   const requiredTeams = teamIds.filter(
-    (teamId) => initiative.teamStates[teamId] !== 'NA'
+    (teamId) => initiative.teamStates[teamId] !== 'N/A'
   );
 
   if (requiredTeams.length === 0) return true;
 
   return requiredTeams.every(
-    (teamId) => initiative.teamStates[teamId] === 'NOT_STARTED'
+    (teamId) => initiative.teamStates[teamId] === 'N/S'
   );
 }
 
 /**
- * Count initiatives that have at least one team in READY state
+ * Count initiatives that have at least one team in Ready state
  */
 export function getReadyCount(initiatives: Initiative[]): number {
   return initiatives.filter((init) =>
-    Object.values(init.teamStates).some((state) => state === 'READY')
+    Object.values(init.teamStates).some((state) => state === 'Ready')
   ).length;
 }
 
 /**
  * Calculate constraint load ratio for a team
- * Returns percentage of initiatives blocked by this team
+ * Returns percentage of initiatives where this team is Constrained or N/S while others are engaged
  */
 export function getConstraintLoadRatio(
   teamId: string,
@@ -56,19 +56,19 @@ export function getConstraintLoadRatio(
 ): number {
   if (initiatives.length === 0) return 0;
 
-  const blockedCount = initiatives.filter((init) => {
+  const constrainedCount = initiatives.filter((init) => {
     const state = init.teamStates[teamId];
-    // Team is blocking if their state is NOT_STARTED while others are engaged
-    if (state !== 'NOT_STARTED') return false;
+    // Team is a constraint if their state is N/S or Constrained while others are engaged
+    if (state !== 'N/S' && state !== 'Constrained') return false;
 
     // Check if other teams are waiting (engaged but this team is holding things up)
     const otherTeams = Object.entries(init.teamStates).filter(
-      ([id, s]) => id !== teamId && s !== 'NA'
+      ([id, s]) => id !== teamId && s !== 'N/A'
     );
     return otherTeams.some(([, s]) => ENGAGED_STATES.includes(s));
   }).length;
 
-  return Math.round((blockedCount / initiatives.length) * 100);
+  return Math.round((constrainedCount / initiatives.length) * 100);
 }
 
 /**
@@ -80,39 +80,31 @@ export function getBlockedByTeam(
 ): Initiative[] {
   return initiatives.filter((init) => {
     const state = init.teamStates[teamId];
-    if (state !== 'NOT_STARTED') return false;
+    if (state !== 'N/S' && state !== 'Constrained') return false;
 
     const otherTeams = Object.entries(init.teamStates).filter(
-      ([id, s]) => id !== teamId && s !== 'NA'
+      ([id, s]) => id !== teamId && s !== 'N/A'
     );
     return otherTeams.some(([, s]) => ENGAGED_STATES.includes(s));
   });
 }
 
 /**
- * Get rollup state for a group of initiatives (most behind state wins)
+ * Get rollup state for a group of initiatives ("worst-status-wins")
+ * Uses ROLLUP_PRIORITY: Blocked -> Doing -> Constrained -> Ready -> Discovery -> N/S -> Done -> N/A
  */
 export function getRollupState(
   initiatives: Initiative[],
   teamId: string
 ): FlowState {
-  const priority: FlowState[] = [
-    'NOT_STARTED',
-    'IN_DISCOVERY',
-    'READY',
-    'IN_FLIGHT',
-    'UAT',
-    'DONE',
-    'NA',
-  ];
+  const states = initiatives.map((i) => i.teamStates[teamId] ?? 'N/A');
 
-  const states = initiatives.map((i) => i.teamStates[teamId] ?? 'NA');
-
-  for (const state of priority) {
+  // Return the most urgent state (lowest index in priority order)
+  for (const state of ROLLUP_PRIORITY) {
     if (states.includes(state)) return state;
   }
 
-  return 'NA';
+  return 'N/A';
 }
 
 /**

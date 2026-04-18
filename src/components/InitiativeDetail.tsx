@@ -68,7 +68,7 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
                     >
                       <span className="text-sm font-medium">{team.name}</span>
                       <StatePicker
-                        value={initiative.teamStates[team.id] ?? 'NOT_STARTED'}
+                        value={initiative.teamStates[team.id] ?? 'N/S'}
                         onChange={(state) =>
                           updateTeamState(initiative.id, team.id, state)
                         }

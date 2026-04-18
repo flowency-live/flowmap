@@ -44,6 +44,8 @@ function toLocalInitiative(amplifyInit: {
   name: string;
   themeId: string;
   parentId?: string | null;
+  liveDate?: string | null;
+  dueDate?: string | null;
   notes?: string | null;
   sequencingNotes?: string | null;
   teamStates?: unknown;
@@ -74,6 +76,8 @@ function toLocalInitiative(amplifyInit: {
     name: amplifyInit.name,
     themeId: amplifyInit.themeId,
     parentId: amplifyInit.parentId ?? null,
+    liveDate: amplifyInit.liveDate ?? undefined,
+    dueDate: amplifyInit.dueDate ?? undefined,
     notes: amplifyInit.notes ?? '',
     sequencingNotes: amplifyInit.sequencingNotes ?? '',
     teamStates,
@@ -179,7 +183,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     const teams = get().teams;
     const defaultStates: Record<string, FlowState> = {};
     teams.forEach((team) => {
-      defaultStates[team.id] = 'NOT_STARTED';
+      defaultStates[team.id] = 'N/S';
     });
 
     try {
@@ -304,7 +308,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
           // Add NOT_STARTED state for new team to all initiatives
           initiatives: s.initiatives.map((init) => ({
             ...init,
-            teamStates: { ...init.teamStates, [newTeam.id]: 'NOT_STARTED' as FlowState },
+            teamStates: { ...init.teamStates, [newTeam.id]: 'N/S' as FlowState },
           })),
         }));
 
@@ -436,11 +440,16 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   // Internal subscription handlers
   _applyInitiativeUpdate: (initiative) => {
     set((s) => {
-      const exists = s.initiatives.some((i) => i.id === initiative.id);
-      if (exists) {
+      const existing = s.initiatives.find((i) => i.id === initiative.id);
+      if (existing) {
+        // Preserve local teamEfforts if incoming data has empty efforts
+        // (since teamEfforts aren't persisted to AppSync yet)
+        const teamEfforts = Object.keys(initiative.teamEfforts).length > 0
+          ? initiative.teamEfforts
+          : existing.teamEfforts;
         return {
           initiatives: s.initiatives.map((i) =>
-            i.id === initiative.id ? initiative : i
+            i.id === initiative.id ? { ...initiative, teamEfforts } : i
           ),
         };
       }

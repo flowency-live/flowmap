@@ -51,7 +51,7 @@ export function Simulator() {
 
     const teamIds = Object.keys(targetInitiative.teamStates);
     const requiredTeams = teamIds.filter(
-      (id) => targetInitiative.teamStates[id] !== 'NA'
+      (id) => targetInitiative.teamStates[id] !== 'N/A'
     );
 
     if (requiredTeams.length === 0) return 0;
@@ -256,7 +256,7 @@ export function Simulator() {
               </span>
               , allowing downstream teams to move from{' '}
               <span className="font-semibold text-teal-600">Ready</span> to{' '}
-              <span className="font-semibold text-violet-600">In Flight</span>.
+              <span className="font-semibold text-violet-600">Doing</span>.
             </p>
           </div>
 

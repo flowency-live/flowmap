@@ -1,0 +1,694 @@
+{
+  "schema_version": "1.0",
+  "generated_from": "Excel Roadmap sheet",
+  "model": {
+    "description": "Team demand & capacity roadmap. Tracks initiatives and their child items across 6 teams.",
+    "teams": [
+      {
+        "id": "UPJ",
+        "full_name": "UPJ"
+      },
+      {
+        "id": "UIE",
+        "full_name": "UIE"
+      },
+      {
+        "id": "UNC",
+        "full_name": "UNC"
+      },
+      {
+        "id": "Logan",
+        "full_name": "Logan"
+      },
+      {
+        "id": "DataE",
+        "full_name": "Data Engineering"
+      },
+      {
+        "id": "DataS",
+        "full_name": "Data Science"
+      }
+    ],
+    "statuses": [
+      {
+        "id": "N/A",
+        "meaning": "Not applicable — this team has nothing to do on this item",
+        "color_bg": "#D9D9D9",
+        "color_fg": "#595959",
+        "rollup_priority": 8
+      },
+      {
+        "id": "N/S",
+        "meaning": "Not started — work is known and will be picked up later",
+        "color_bg": "#FFD7A8",
+        "color_fg": "#9C5700",
+        "rollup_priority": 6
+      },
+      {
+        "id": "Discovery",
+        "meaning": "Work has started but is still being explored / not yet sized",
+        "color_bg": "#FFF2CC",
+        "color_fg": "#7F6000",
+        "rollup_priority": 5
+      },
+      {
+        "id": "Ready",
+        "meaning": "Estimated and ready to start — waiting for scheduling",
+        "color_bg": "#FFF2CC",
+        "color_fg": "#006100",
+        "rollup_priority": 4
+      },
+      {
+        "id": "Constrained",
+        "meaning": "Work is known and sized but team lacks capacity to start",
+        "color_bg": "#E4D7F5",
+        "color_fg": "#5B2C87",
+        "rollup_priority": 3
+      },
+      {
+        "id": "Doing",
+        "meaning": "Work is actively in progress",
+        "color_bg": "#BDD7EE",
+        "color_fg": "#1F3864",
+        "rollup_priority": 2
+      },
+      {
+        "id": "Done",
+        "meaning": "Work is complete",
+        "color_bg": "#C6EFCE",
+        "color_fg": "#006100",
+        "rollup_priority": 7
+      },
+      {
+        "id": "Blocked",
+        "meaning": "Work cannot progress due to an external dependency",
+        "color_bg": "#FFC7CE",
+        "color_fg": "#9C0006",
+        "rollup_priority": 1
+      }
+    ],
+    "rollup": {
+      "strategy": "worst-status-wins",
+      "description": "Each parent initiative's status per team is computed from its children. For each team column, the parent takes the child status with the lowest (most-urgent) rollup_priority value. Ties broken by order below.",
+      "priority_order_most_to_least_urgent": [
+        "Blocked",
+        "Doing",
+        "Constrained",
+        "Ready",
+        "Discovery",
+        "N/S",
+        "Done",
+        "N/A"
+      ],
+      "rationale": {
+        "Blocked": "Highest urgency — needs external unblocking.",
+        "Doing": "Active work — visibility priority.",
+        "Constrained": "Work ready but no capacity — a capacity signal worth surfacing.",
+        "Ready": "Sized and ready to start — next in queue.",
+        "Discovery": "Exploratory — not yet sized.",
+        "N/S": "Known backlog.",
+        "Done": "Shown only if no other live work exists.",
+        "N/A": "Lowest — only shown if every child is N/A."
+      }
+    }
+  },
+  "initiatives": [
+    {
+      "name": "M&S Onboarding",
+      "sheet_row": 5,
+      "due_date": "LIVE 29th June",
+      "rollup_by_team": {
+        "UPJ": "Constrained",
+        "UIE": "Doing",
+        "UNC": "Doing",
+        "Logan": "N/A",
+        "DataE": "Ready",
+        "DataS": "N/S"
+      },
+      "children": [
+        {
+          "name": "SSO Integration, Prepop",
+          "sheet_row": 6,
+          "due_date": "15th May",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "N/A",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Sparks ID/Metadata",
+          "sheet_row": 7,
+          "due_date": "15th May",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "Doing",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": null,
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Branded Journey & Servicing",
+          "sheet_row": 8,
+          "due_date": "1st June",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "N/A",
+            "UNC": "Doing",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "NPC Incentives",
+          "sheet_row": 9,
+          "due_date": "1st June",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "Ready",
+            "UNC": "Ready",
+            "Logan": "N/A",
+            "DataE": "Ready",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "PC Incentives",
+          "sheet_row": 10,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/S",
+            "UIE": "N/S",
+            "UNC": "N/S",
+            "Logan": "N/A",
+            "DataE": "N/S",
+            "DataS": "N/S"
+          }
+        },
+        {
+          "name": "M&S Colleague Pricing",
+          "sheet_row": 11,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/S",
+            "UIE": "N/S",
+            "UNC": "N/S",
+            "Logan": "N/A",
+            "DataE": "N/S",
+            "DataS": "N/S"
+          }
+        }
+      ]
+    },
+    {
+      "name": "NatWest Onboarding",
+      "sheet_row": 12,
+      "due_date": "LIVE 14th July",
+      "rollup_by_team": {
+        "UPJ": "Constrained",
+        "UIE": "Doing",
+        "UNC": "Ready",
+        "Logan": "N/A",
+        "DataE": "N/A",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "SSO Integration, Prepop",
+          "sheet_row": 13,
+          "due_date": "15th May",
+          "status_by_team": {
+            "UPJ": "Ready",
+            "UIE": "Ready",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "CID/Metadata",
+          "sheet_row": 14,
+          "due_date": "15th May",
+          "status_by_team": {
+            "UPJ": "Ready",
+            "UIE": "Doing",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": null,
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Branded Journey & Servicing (x6)",
+          "sheet_row": 15,
+          "due_date": "1st-12th June",
+          "status_by_team": {
+            "UPJ": "Ready",
+            "UIE": "N/A",
+            "UNC": "Discovery",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Renters",
+          "sheet_row": 16,
+          "due_date": "1st-12th June",
+          "status_by_team": {
+            "UPJ": "Ready",
+            "UIE": "N/A",
+            "UNC": "Ready",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "MortgageCX",
+          "sheet_row": 17,
+          "due_date": "1st-12th June",
+          "status_by_team": {
+            "UPJ": "N/S",
+            "UIE": "N/A",
+            "UNC": "Discovery",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "CustPort",
+          "sheet_row": 18,
+          "due_date": "1st-12th June",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "N/A",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "InsuranceMonitoring",
+          "sheet_row": 19,
+          "due_date": "1st-12th June",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "N/S",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Changes",
+      "sheet_row": 20,
+      "due_date": null,
+      "rollup_by_team": {
+        "UPJ": "N/A",
+        "UIE": "Doing",
+        "UNC": null,
+        "Logan": "N/A",
+        "DataE": "Done",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "EOW Excess",
+          "sheet_row": 21,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Done",
+            "UNC": null,
+            "Logan": "N/A",
+            "DataE": "Done",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Eligibility Criteria",
+          "sheet_row": 22,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Done",
+            "UNC": null,
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Insurer Dynamic Display",
+          "sheet_row": 23,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Doing",
+            "UNC": null,
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "LBG",
+      "sheet_row": 24,
+      "due_date": null,
+      "rollup_by_team": {
+        "UPJ": "N/A",
+        "UIE": "Doing",
+        "UNC": null,
+        "Logan": "N/A",
+        "DataE": "N/A",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "Ratings NB",
+          "sheet_row": 25,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Doing",
+            "UNC": null,
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "MTA",
+          "sheet_row": 26,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Discovery",
+            "UNC": null,
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Renewals",
+          "sheet_row": 27,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Ready",
+            "UNC": null,
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Aviva - Add to Home Panel",
+      "sheet_row": 28,
+      "due_date": null,
+      "rollup_by_team": {
+        "UPJ": "Constrained",
+        "UIE": "Doing",
+        "UNC": "Ready",
+        "Logan": "N/A",
+        "DataE": "Ready",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "Exclude Rebroke",
+          "sheet_row": 29,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "Doing",
+            "UNC": "Ready",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "D2C Branded Site",
+          "sheet_row": 30,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "N/A",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Go Live Activity",
+          "sheet_row": 31,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "Constrained",
+            "UIE": "Ready",
+            "UNC": "Ready",
+            "Logan": "N/A",
+            "DataE": "Ready",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logan",
+      "sheet_row": 32,
+      "due_date": null,
+      "rollup_by_team": {
+        "UPJ": "Discovery",
+        "UIE": "Constrained",
+        "UNC": "Doing",
+        "Logan": "Doing",
+        "DataE": "N/A",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "MTA V2 Endpoint",
+          "sheet_row": 33,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Constrained",
+            "UNC": "N/A",
+            "Logan": "Constrained",
+            "DataE": null,
+            "DataS": null
+          }
+        },
+        {
+          "name": "DocGen Self Serve MVP",
+          "sheet_row": 34,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "Discovery",
+            "UIE": "N/A",
+            "UNC": "N/A",
+            "Logan": "Constrained",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Logan PAS in Flex",
+          "sheet_row": 35,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "N/A",
+            "UNC": "Doing",
+            "Logan": "Doing",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        },
+        {
+          "name": "Communication Service",
+          "sheet_row": 36,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "N/A",
+            "UNC": "Constrained",
+            "Logan": "Constrained",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "AXA",
+      "sheet_row": 37,
+      "due_date": "18th Sept",
+      "rollup_by_team": {
+        "UPJ": "N/A",
+        "UIE": "Constrained",
+        "UNC": "N/A",
+        "Logan": "N/A",
+        "DataE": "N/A",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "AXA IHP - Renewal Schemes",
+          "sheet_row": 38,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Constrained",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ageas",
+      "sheet_row": 39,
+      "due_date": "16th Oct",
+      "rollup_by_team": {
+        "UPJ": "N/A",
+        "UIE": "Constrained",
+        "UNC": "N/A",
+        "Logan": "N/A",
+        "DataE": "N/A",
+        "DataS": "N/A"
+      },
+      "children": [
+        {
+          "name": "Ageas IHP - Renewal Schemes",
+          "sheet_row": 40,
+          "due_date": "-",
+          "status_by_team": {
+            "UPJ": "N/A",
+            "UIE": "Constrained",
+            "UNC": "N/A",
+            "Logan": "N/A",
+            "DataE": "N/A",
+            "DataS": "N/A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BAU",
+      "sheet_row": 41,
+      "due_date": null,
+      "rollup_by_team": {
+        "UPJ": null,
+        "UIE": null,
+        "UNC": null,
+        "Logan": null,
+        "DataE": null,
+        "DataS": null
+      },
+      "children": [
+        {
+          "name": "Child 1",
+          "sheet_row": 42,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": null,
+            "UIE": null,
+            "UNC": null,
+            "Logan": null,
+            "DataE": null,
+            "DataS": null
+          }
+        },
+        {
+          "name": "Child 2",
+          "sheet_row": 43,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": null,
+            "UIE": null,
+            "UNC": null,
+            "Logan": null,
+            "DataE": null,
+            "DataS": null
+          }
+        },
+        {
+          "name": "Child 3",
+          "sheet_row": 44,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": null,
+            "UIE": null,
+            "UNC": null,
+            "Logan": null,
+            "DataE": null,
+            "DataS": null
+          }
+        },
+        {
+          "name": "Child 4",
+          "sheet_row": 45,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": null,
+            "UIE": null,
+            "UNC": null,
+            "Logan": null,
+            "DataE": null,
+            "DataS": null
+          }
+        },
+        {
+          "name": "Child 5",
+          "sheet_row": 46,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": null,
+            "UIE": null,
+            "UNC": null,
+            "Logan": null,
+            "DataE": null,
+            "DataS": null
+          }
+        },
+        {
+          "name": "Child 6",
+          "sheet_row": 47,
+          "due_date": null,
+          "status_by_team": {
+            "UPJ": null,
+            "UIE": null,
+            "UNC": null,
+            "Logan": null,
+            "DataE": null,
+            "DataS": null
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -2,16 +2,20 @@
  * FlowMap Type Definitions
  *
  * Core domain types for the portfolio flow intelligence system.
+ *
+ * Flow States (from roadmap):
+ * N/A, N/S, Discovery, Ready, Constrained, Doing, Done, Blocked
  */
 
 export type FlowState =
-  | 'NOT_STARTED'
-  | 'IN_DISCOVERY'
-  | 'READY'
-  | 'IN_FLIGHT'
-  | 'UAT'
-  | 'DONE'
-  | 'NA';
+  | 'N/A'
+  | 'N/S'
+  | 'Discovery'
+  | 'Ready'
+  | 'Constrained'
+  | 'Doing'
+  | 'Done'
+  | 'Blocked';
 
 export interface Theme {
   id: string;
@@ -58,6 +62,8 @@ export interface Initiative {
   name: string;
   themeId: string;
   parentId: string | null;
+  liveDate?: string | undefined; // Go-live date for parent initiatives (e.g., "LIVE 29th June")
+  dueDate?: string | undefined; // UAT delivery date for child items (e.g., "15th May")
   notes: string;
   sequencingNotes: string;
   teamStates: Record<string, FlowState>; // teamId -> state
@@ -72,76 +78,102 @@ export interface PortfolioState {
 
 /**
  * State configuration for UI rendering
+ * Colors match the Excel roadmap specification
  */
 export interface StateConfig {
   label: string;
   short: string;
-  bgClass: string;
-  textClass: string;
+  bgColor: string; // Hex background color
+  textColor: string; // Hex text color
 }
 
 export const STATE_CONFIG: Record<FlowState, StateConfig> = {
-  NOT_STARTED: {
+  'N/A': {
+    label: 'Not Applicable',
+    short: 'N/A',
+    bgColor: '#D9D9D9',
+    textColor: '#595959',
+  },
+  'N/S': {
     label: 'Not Started',
-    short: 'NS',
-    bgClass: 'bg-rose-500',
-    textClass: 'text-white',
+    short: 'N/S',
+    bgColor: '#FFD7A8',
+    textColor: '#9C5700',
   },
-  IN_DISCOVERY: {
-    label: 'In Discovery',
-    short: 'ID',
-    bgClass: 'bg-blue-500',
-    textClass: 'text-white',
+  Discovery: {
+    label: 'Discovery',
+    short: 'Disc',
+    bgColor: '#FFF2CC',
+    textColor: '#7F6000',
   },
-  READY: {
+  Ready: {
     label: 'Ready',
-    short: 'RD',
-    bgClass: 'bg-teal-500',
-    textClass: 'text-white',
+    short: 'Ready',
+    bgColor: '#FFF2CC',
+    textColor: '#006100',
   },
-  IN_FLIGHT: {
-    label: 'In Flight',
-    short: 'IF',
-    bgClass: 'bg-violet-600',
-    textClass: 'text-white',
+  Constrained: {
+    label: 'Constrained',
+    short: 'Const',
+    bgColor: '#E4D7F5',
+    textColor: '#5B2C87',
   },
-  UAT: {
-    label: 'UAT',
-    short: 'UT',
-    bgClass: 'bg-amber-400',
-    textClass: 'text-amber-950',
+  Doing: {
+    label: 'Doing',
+    short: 'Doing',
+    bgColor: '#BDD7EE',
+    textColor: '#1F3864',
   },
-  DONE: {
+  Done: {
     label: 'Done',
-    short: 'DN',
-    bgClass: 'bg-emerald-500',
-    textClass: 'text-white',
+    short: 'Done',
+    bgColor: '#C6EFCE',
+    textColor: '#006100',
   },
-  NA: {
-    label: 'Not Required',
-    short: '--',
-    bgClass: 'bg-slate-200',
-    textClass: 'text-slate-400',
+  Blocked: {
+    label: 'Blocked',
+    short: 'Block',
+    bgColor: '#FFC7CE',
+    textColor: '#9C0006',
   },
 };
 
+/**
+ * Flow states in display order (for dropdowns, legends)
+ */
 export const FLOW_STATES: FlowState[] = [
-  'NOT_STARTED',
-  'IN_DISCOVERY',
-  'READY',
-  'IN_FLIGHT',
-  'UAT',
-  'DONE',
-  'NA',
+  'N/S',
+  'Discovery',
+  'Ready',
+  'Constrained',
+  'Doing',
+  'Done',
+  'Blocked',
+  'N/A',
 ];
 
 /**
- * States that indicate active engagement
+ * Rollup priority order: most urgent first
+ * Used for computing parent status from children ("worst-status-wins")
+ */
+export const ROLLUP_PRIORITY: FlowState[] = [
+  'Blocked', // 1 - highest urgency
+  'Doing', // 2 - active work
+  'Constrained', // 3 - capacity signal
+  'Ready', // 4 - next in queue
+  'Discovery', // 5 - exploratory
+  'N/S', // 6 - known backlog
+  'Done', // 7 - only if no live work
+  'N/A', // 8 - lowest
+];
+
+/**
+ * States that indicate active engagement (not backlog or N/A)
  */
 export const ENGAGED_STATES: FlowState[] = [
-  'IN_DISCOVERY',
-  'READY',
-  'IN_FLIGHT',
-  'UAT',
-  'DONE',
+  'Discovery',
+  'Ready',
+  'Constrained',
+  'Doing',
+  'Done',
 ];
