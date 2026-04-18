@@ -44,6 +44,7 @@ function toLocalInitiative(amplifyInit: {
   name: string;
   themeId: string;
   parentId?: string | null;
+  order?: number | null;
   liveDate?: string | null;
   dueDate?: string | null;
   notes?: string | null;
@@ -76,6 +77,7 @@ function toLocalInitiative(amplifyInit: {
     name: amplifyInit.name,
     themeId: amplifyInit.themeId,
     parentId: amplifyInit.parentId ?? null,
+    order: amplifyInit.order ?? 0,
     liveDate: amplifyInit.liveDate ?? undefined,
     dueDate: amplifyInit.dueDate ?? undefined,
     notes: amplifyInit.notes ?? '',
@@ -114,7 +116,10 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         isPrimaryConstraint: t.isPrimaryConstraint ?? false,
       }));
 
-      const initiatives: Initiative[] = (initiativesResult.data ?? []).map(toLocalInitiative);
+      // Sort initiatives by explicit order field
+      const initiatives: Initiative[] = (initiativesResult.data ?? [])
+        .map(toLocalInitiative)
+        .sort((a, b) => a.order - b.order);
 
       set({ themes, teams, initiatives, isLoading: false });
     } catch (err) {
@@ -181,16 +186,21 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
 
   addInitiative: async (themeId, name, parentId = null) => {
     const teams = get().teams;
+    const initiatives = get().initiatives;
     const defaultStates: Record<string, FlowState> = {};
     teams.forEach((team) => {
       defaultStates[team.id] = 'N/S';
     });
+
+    // Calculate next order value (max + 1)
+    const maxOrder = initiatives.reduce((max, i) => Math.max(max, i.order), 0);
 
     try {
       const result = await client.models.Initiative.create({
         name,
         themeId,
         parentId: parentId,
+        order: maxOrder + 1,
         notes: '',
         sequencingNotes: '',
         teamStates: JSON.stringify(defaultStates),

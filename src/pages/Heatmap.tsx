@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Layers,
@@ -12,6 +12,8 @@ import {
   Pencil,
   Check,
   X,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from 'lucide-react';
 import {
   Select,
@@ -119,7 +121,7 @@ export function Heatmap() {
 
   const [selectedTheme, setSelectedTheme] = useState<string>('all');
   const [selectedInit, setSelectedInit] = useState<Initiative | null>(null);
-  const [collapsedThemes, setCollapsedThemes] = useState<Set<string>>(new Set());
+  const [collapsedInitiatives, setCollapsedInitiatives] = useState<Set<string>>(new Set());
   const [addingInitToTheme, setAddingInitToTheme] = useState<string | null>(null);
   const [addingTheme, setAddingTheme] = useState(false);
   const [addTeamOpen, setAddTeamOpen] = useState(false);
@@ -151,16 +153,38 @@ export function Heatmap() {
     (t) => selectedTheme === 'all' || t.id === selectedTheme
   );
 
-  const toggleTheme = (themeId: string) => {
-    setCollapsedThemes((prev) => {
+  // Get parent initiatives (top level) - preserve original order from data
+  const parentInitiatives = useMemo(() => {
+    return filteredInitiatives.filter((i) => i.parentId === null);
+  }, [filteredInitiatives]);
+
+  // Get parent IDs that have children (for expand/collapse)
+  const parentsWithChildren = useMemo(() => {
+    return new Set(
+      parentInitiatives
+        .filter((p) => filteredInitiatives.some((c) => c.parentId === p.id))
+        .map((p) => p.id)
+    );
+  }, [parentInitiatives, filteredInitiatives]);
+
+  const toggleInitiative = (initId: string) => {
+    setCollapsedInitiatives((prev) => {
       const next = new Set(prev);
-      if (next.has(themeId)) {
-        next.delete(themeId);
+      if (next.has(initId)) {
+        next.delete(initId);
       } else {
-        next.add(themeId);
+        next.add(initId);
       }
       return next;
     });
+  };
+
+  const expandAll = () => {
+    setCollapsedInitiatives(new Set());
+  };
+
+  const collapseAll = () => {
+    setCollapsedInitiatives(new Set(parentsWithChildren));
   };
 
   const handleAddTeam = () => {
@@ -189,7 +213,7 @@ export function Heatmap() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-8 max-w-7xl mx-auto space-y-6"
+      className="p-6 space-y-5"
     >
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -237,17 +261,37 @@ export function Heatmap() {
         />
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-1">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Legend
-        </span>
-        {STATE_LEGEND_ITEMS.map(({ state, label }) => (
-          <div key={state} className="flex items-center gap-1.5">
-            <StateBadge state={state} />
-            <span className="text-xs text-muted-foreground">{label}</span>
+      {/* Legend + Expand/Collapse Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-1">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Legend
+          </span>
+          {STATE_LEGEND_ITEMS.map(({ state, label }) => (
+            <div key={state} className="flex items-center gap-1.5">
+              <StateBadge state={state} />
+              <span className="text-xs text-muted-foreground">{label}</span>
+            </div>
+          ))}
+        </div>
+        {parentsWithChildren.size > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={expandAll}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border border-border hover:border-primary"
+            >
+              <ChevronsUpDown className="h-3.5 w-3.5" />
+              Expand All
+            </button>
+            <button
+              onClick={collapseAll}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border border-border hover:border-primary"
+            >
+              <ChevronsDownUp className="h-3.5 w-3.5" />
+              Collapse All
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Matrix Table */}
@@ -336,113 +380,178 @@ export function Heatmap() {
             </thead>
 
             <tbody>
-              {visibleThemes.flatMap((theme) => {
-                const themeInits = filteredInitiatives.filter(
-                  (i) => i.themeId === theme.id && i.parentId === null
+              {parentInitiatives.map((parentInit) => {
+                const children = filteredInitiatives.filter(
+                  (i) => i.parentId === parentInit.id
                 );
-                const themeLeaves = filteredInitiatives.filter((i) => {
-                  if (i.themeId !== theme.id) return false;
-                  return !initiatives.some((child) => child.parentId === i.id);
-                });
+                const hasChildren = children.length > 0;
+                const isCollapsed = collapsedInitiatives.has(parentInit.id);
+                const isRenaming = renamingId === parentInit.id;
 
-                const isCollapsed = collapsedThemes.has(theme.id);
-                const avgScore = getAverageStartability(themeLeaves);
-                const isAddingInit = addingInitToTheme === theme.id;
+                // For parents with children, compute rollup from children
+                // For leaf initiatives, use their own states
+                const displayStates = hasChildren
+                  ? teams.reduce((acc, team) => {
+                      acc[team.id] = getRollupState(children, team.id);
+                      return acc;
+                    }, {} as Record<string, FlowState>)
+                  : parentInit.teamStates;
+
+                const score = hasChildren
+                  ? getAverageStartability(children)
+                  : getStartabilityScore(parentInit);
 
                 const rows: React.ReactNode[] = [];
 
-                // Theme Header Row
+                // Parent Initiative Row
                 rows.push(
                   <tr
-                    key={`theme-${theme.id}`}
-                    className="bg-muted/40 border-b border-border hover:bg-muted/60 transition-colors group"
+                    key={parentInit.id}
+                    className={cn(
+                      'border-b border-border cursor-pointer transition-colors group',
+                      hasChildren
+                        ? 'bg-muted/30 hover:bg-muted/50 border-l-2 border-l-primary/40'
+                        : 'hover:bg-muted/30'
+                    )}
+                    onClick={() => setSelectedInit(parentInit)}
                   >
                     <td className="px-4 py-3 h-12">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleTheme(theme.id)}
-                          className="flex items-center gap-2 font-bold text-sm flex-1 text-left"
-                        >
-                          {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          )}
-                          {theme.name}
-                          <span className="text-xs font-normal text-muted-foreground">
-                            ({themeInits.length})
+                        {hasChildren && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleInitiative(parentInit.id);
+                            }}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            {isCollapsed ? (
+                              <ChevronRight className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                        {!hasChildren && <span className="w-4" />}
+                        {isRenaming ? (
+                          <input
+                            autoFocus
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') confirmRename();
+                              if (e.key === 'Escape') setRenamingId(null);
+                            }}
+                            onBlur={confirmRename}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 bg-transparent border-b border-primary text-sm font-medium outline-none py-0.5"
+                          />
+                        ) : (
+                          <span
+                            className={cn(
+                              'flex-1 truncate',
+                              hasChildren ? 'font-semibold' : 'font-medium'
+                            )}
+                          >
+                            {parentInit.name}
+                            {hasChildren && (
+                              <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                                ({children.length})
+                              </span>
+                            )}
                           </span>
-                        </button>
-                        <ConfirmDelete
-                          trigger={
-                            <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                              <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                        {!isRenaming && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startRename(parentInit);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
+                            >
+                              <Pencil className="h-3 w-3" />
                             </button>
-                          }
-                          title={`Delete "${theme.name}"?`}
-                          description="This will permanently delete this theme and all its initiatives. This action cannot be undone."
-                          onConfirm={() => removeTheme(theme.id)}
-                        />
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <ConfirmDelete
+                                trigger={
+                                  <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                }
+                                title={`Delete "${parentInit.name}"?`}
+                                description={
+                                  hasChildren
+                                    ? 'This will permanently delete this initiative and all its child items. This action cannot be undone.'
+                                    : 'This will permanently delete this initiative. This action cannot be undone.'
+                                }
+                                onConfirm={() => removeInitiative(parentInit.id)}
+                              />
+                            </span>
+                          </>
+                        )}
                       </div>
                     </td>
-                    <td className="px-3 py-3 h-12" />
+                    <td className="px-3 py-3 h-12">
+                      {parentInit.liveDate && (
+                        <span className="text-xs font-medium text-primary">
+                          {parentInit.liveDate}
+                        </span>
+                      )}
+                    </td>
                     {teams.map((team) => (
-                      <td key={team.id} className="px-2 py-3 text-center h-12">
+                      <td
+                        key={team.id}
+                        className="px-2 py-3 text-center h-12"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="flex items-center justify-center h-6">
-                          <StateBadge
-                            state={getRollupState(themeLeaves, team.id)}
-                            size="lg"
-                          />
+                          {hasChildren ? (
+                            <StateBadge
+                              state={displayStates[team.id] ?? 'N/A'}
+                              size="lg"
+                            />
+                          ) : (
+                            <StatePicker
+                              value={parentInit.teamStates[team.id] ?? 'N/S'}
+                              effort={parentInit.teamEfforts[team.id]}
+                              onChange={(state) =>
+                                updateTeamState(parentInit.id, team.id, state)
+                              }
+                              onEffortChange={(effort: Effort | null) =>
+                                updateTeamEffort(parentInit.id, team.id, effort)
+                              }
+                            />
+                          )}
                         </div>
                       </td>
                     ))}
                     <td className="h-12" />
                     <td className="px-2 py-3 text-center h-12">
                       <div className="flex flex-col items-center justify-center gap-1 h-6">
-                        <span className="text-xs font-bold">{avgScore}%</span>
-                        <Progress value={avgScore} className="h-1.5 w-12" />
+                        <span className="text-xs font-bold">{score}%</span>
+                        <Progress value={score} className="h-1.5 w-12" />
                       </div>
                     </td>
                   </tr>
                 );
 
-                // Initiative Rows (only when expanded)
-                if (!isCollapsed) {
-                  themeInits.forEach((parentInit) => {
-                    const children = filteredInitiatives.filter(
-                      (i) => i.parentId === parentInit.id
-                    );
-                    const hasChildren = children.length > 0;
-                    const isRenaming = renamingId === parentInit.id;
+                // Child rows (only when expanded)
+                if (hasChildren && !isCollapsed) {
+                  children.forEach((child) => {
+                    const childScore = getStartabilityScore(child);
+                    const isChildRenaming = renamingId === child.id;
 
-                    // For parents with children, compute rollup from children
-                    // For leaf initiatives, use their own states
-                    const displayStates = hasChildren
-                      ? teams.reduce((acc, team) => {
-                          acc[team.id] = getRollupState(children, team.id);
-                          return acc;
-                        }, {} as Record<string, FlowState>)
-                      : parentInit.teamStates;
-
-                    const score = hasChildren
-                      ? getAverageStartability(children)
-                      : getStartabilityScore(parentInit);
-
-                    // Parent Initiative Row
                     rows.push(
                       <tr
-                        key={parentInit.id}
-                        className={cn(
-                          'border-b border-border cursor-pointer transition-colors group',
-                          hasChildren
-                            ? 'bg-muted/20 hover:bg-muted/40 border-l-2 border-l-primary/30'
-                            : 'hover:bg-muted/30'
-                        )}
-                        onClick={() => setSelectedInit(parentInit)}
+                        key={child.id}
+                        className="border-b border-border hover:bg-muted/20 cursor-pointer transition-colors group bg-background"
+                        onClick={() => setSelectedInit(child)}
                       >
-                        <td className="px-6 py-3 pl-10 h-12">
+                        <td className="px-4 py-2 pl-10 h-10">
                           <div className="flex items-center gap-2">
-                            {isRenaming ? (
+                            <span className="text-muted-foreground">└</span>
+                            {isChildRenaming ? (
                               <input
                                 autoFocus
                                 value={renameValue}
@@ -453,24 +562,19 @@ export function Heatmap() {
                                 }}
                                 onBlur={confirmRename}
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex-1 bg-transparent border-b border-primary text-sm font-medium outline-none py-0.5"
+                                className="flex-1 bg-transparent border-b border-primary text-sm outline-none py-0.5"
                               />
                             ) : (
-                              <span
-                                className={cn(
-                                  'flex-1 truncate',
-                                  hasChildren ? 'font-semibold' : 'font-medium'
-                                )}
-                              >
-                                {parentInit.name}
+                              <span className="flex-1 truncate text-sm">
+                                {child.name}
                               </span>
                             )}
-                            {!isRenaming && (
+                            {!isChildRenaming && (
                               <>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    startRename(parentInit);
+                                    startRename(child);
                                   }}
                                   className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
                                 >
@@ -480,220 +584,88 @@ export function Heatmap() {
                                   <ConfirmDelete
                                     trigger={
                                       <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <Trash2 className="h-3 w-3" />
                                       </button>
                                     }
-                                    title={`Delete "${parentInit.name}"?`}
-                                    description={
-                                      hasChildren
-                                        ? 'This will permanently delete this initiative and all its child items. This action cannot be undone.'
-                                        : 'This will permanently delete this initiative. This action cannot be undone.'
-                                    }
-                                    onConfirm={() => removeInitiative(parentInit.id)}
+                                    title={`Delete "${child.name}"?`}
+                                    description="This will permanently delete this item. This action cannot be undone."
+                                    onConfirm={() => removeInitiative(child.id)}
                                   />
                                 </span>
                               </>
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-3 h-12">
-                          {parentInit.liveDate && (
-                            <span className="text-xs font-medium text-primary">
-                              {parentInit.liveDate}
+                        <td className="px-3 py-2 h-10">
+                          {child.dueDate && (
+                            <span className="text-xs text-muted-foreground">
+                              {child.dueDate}
                             </span>
                           )}
                         </td>
                         {teams.map((team) => (
                           <td
                             key={team.id}
-                            className="px-2 py-3 text-center h-12"
+                            className="px-2 py-2 text-center h-10"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <div className="flex items-center justify-center h-6">
-                              {hasChildren ? (
-                                <StateBadge
-                                  state={displayStates[team.id] ?? 'N/A'}
-                                  size="lg"
-                                />
-                              ) : (
-                                <StatePicker
-                                  value={parentInit.teamStates[team.id] ?? 'N/S'}
-                                  effort={parentInit.teamEfforts[team.id]}
-                                  onChange={(state) =>
-                                    updateTeamState(parentInit.id, team.id, state)
-                                  }
-                                  onEffortChange={(effort: Effort | null) =>
-                                    updateTeamEffort(parentInit.id, team.id, effort)
-                                  }
-                                />
-                              )}
+                            <div className="flex items-center justify-center h-5">
+                              <StatePicker
+                                value={child.teamStates[team.id] ?? 'N/S'}
+                                effort={child.teamEfforts[team.id]}
+                                onChange={(state) =>
+                                  updateTeamState(child.id, team.id, state)
+                                }
+                                onEffortChange={(effort: Effort | null) =>
+                                  updateTeamEffort(child.id, team.id, effort)
+                                }
+                              />
                             </div>
                           </td>
                         ))}
-                        <td className="h-12" />
-                        <td className="px-2 py-3 text-center h-12">
-                          <div className="flex flex-col items-center justify-center gap-1 h-6">
-                            <span className="text-xs font-bold">{score}%</span>
-                            <Progress value={score} className="h-1.5 w-12" />
+                        <td className="h-10" />
+                        <td className="px-2 py-2 text-center h-10">
+                          <div className="flex flex-col items-center justify-center gap-0.5 h-5">
+                            <span className="text-xs font-medium">{childScore}%</span>
+                            <Progress value={childScore} className="h-1 w-10" />
                           </div>
                         </td>
                       </tr>
                     );
-
-                    // Child rows
-                    children.forEach((child) => {
-                      const childScore = getStartabilityScore(child);
-                      const isChildRenaming = renamingId === child.id;
-
-                      rows.push(
-                        <tr
-                          key={child.id}
-                          className="border-b border-border hover:bg-muted/20 cursor-pointer transition-colors group bg-background"
-                          onClick={() => setSelectedInit(child)}
-                        >
-                          <td className="px-6 py-2 pl-14 h-10">
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">└</span>
-                              {isChildRenaming ? (
-                                <input
-                                  autoFocus
-                                  value={renameValue}
-                                  onChange={(e) => setRenameValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') confirmRename();
-                                    if (e.key === 'Escape') setRenamingId(null);
-                                  }}
-                                  onBlur={confirmRename}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex-1 bg-transparent border-b border-primary text-sm outline-none py-0.5"
-                                />
-                              ) : (
-                                <span className="flex-1 truncate text-sm">
-                                  {child.name}
-                                </span>
-                              )}
-                              {!isChildRenaming && (
-                                <>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startRename(child);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </button>
-                                  <span onClick={(e) => e.stopPropagation()}>
-                                    <ConfirmDelete
-                                      trigger={
-                                        <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
-                                      }
-                                      title={`Delete "${child.name}"?`}
-                                      description="This will permanently delete this item. This action cannot be undone."
-                                      onConfirm={() => removeInitiative(child.id)}
-                                    />
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 h-10">
-                            {child.dueDate && (
-                              <span className="text-xs text-muted-foreground">
-                                {child.dueDate}
-                              </span>
-                            )}
-                          </td>
-                          {teams.map((team) => (
-                            <td
-                              key={team.id}
-                              className="px-2 py-2 text-center h-10"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="flex items-center justify-center h-5">
-                                <StatePicker
-                                  value={child.teamStates[team.id] ?? 'N/S'}
-                                  effort={child.teamEfforts[team.id]}
-                                  onChange={(state) =>
-                                    updateTeamState(child.id, team.id, state)
-                                  }
-                                  onEffortChange={(effort: Effort | null) =>
-                                    updateTeamEffort(child.id, team.id, effort)
-                                  }
-                                />
-                              </div>
-                            </td>
-                          ))}
-                          <td className="h-10" />
-                          <td className="px-2 py-2 text-center h-10">
-                            <div className="flex flex-col items-center justify-center gap-0.5 h-5">
-                              <span className="text-xs font-medium">{childScore}%</span>
-                              <Progress value={childScore} className="h-1 w-10" />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    });
                   });
-
-                  // Add Initiative Row
-                  rows.push(
-                    <tr
-                      key={`add-init-${theme.id}`}
-                      className="border-b border-border bg-muted/10"
-                    >
-                      <td className="px-6 py-2 pl-10 h-10" colSpan={teams.length + 4}>
-                        {isAddingInit ? (
-                          <InlineInput
-                            placeholder="Initiative name..."
-                            onConfirm={(name) => {
-                              addInitiative(theme.id, name);
-                              setAddingInitToTheme(null);
-                            }}
-                            onCancel={() => setAddingInitToTheme(null)}
-                          />
-                        ) : (
-                          <button
-                            onClick={() => setAddingInitToTheme(theme.id)}
-                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Add initiative
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
                 }
 
                 return rows;
               })}
 
-              {/* Add Theme Row */}
-              <tr className="border-t-2 border-border bg-muted/5">
-                <td className="px-4 py-3" colSpan={teams.length + 4}>
-                  {addingTheme ? (
-                    <InlineInput
-                      placeholder="Theme name..."
-                      onConfirm={(name) => {
-                        addTheme(name);
-                        setAddingTheme(false);
-                      }}
-                      onCancel={() => setAddingTheme(false)}
-                    />
-                  ) : (
-                    <button
-                      onClick={() => setAddingTheme(true)}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add theme
-                    </button>
-                  )}
-                </td>
-              </tr>
+              {/* Add Initiative Row */}
+              {themes.length > 0 && (
+                <tr className="border-t border-border bg-muted/10">
+                  <td className="px-4 py-2 h-10" colSpan={teams.length + 4}>
+                    {addingInitToTheme ? (
+                      <InlineInput
+                        placeholder="Initiative name..."
+                        onConfirm={(name) => {
+                          addInitiative(addingInitToTheme, name);
+                          setAddingInitToTheme(null);
+                        }}
+                        onCancel={() => setAddingInitToTheme(null)}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const firstTheme = themes[0];
+                          if (firstTheme) setAddingInitToTheme(firstTheme.id);
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add initiative
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

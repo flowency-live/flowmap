@@ -14,7 +14,25 @@
       "Bash(timeout:*)",
       "Bash(npx vite:*)",
       "Bash(ping:*)",
-      "Bash(npx ampx sandbox:*)"
+      "Bash(npx ampx sandbox:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(aws amplify get-app:*)",
+      "Bash(aws amplify list-jobs:*)",
+      "Bash(aws amplify get-job:*)",
+      "Bash(git add:*)",
+      "Bash(npx ampx pipeline-deploy:*)",
+      "Bash(npx ampx generate outputs:*)",
+      "Bash(npx cdk bootstrap:*)",
+      "Bash(aws sts get-caller-identity:*)",
+      "Bash(set:*)",
+      "Bash(set AWS_APP_ID=d1i0owfa4h2yjw:*)",
+      "Bash(findstr:*)",
+      "Bash(npx tsx:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -62,6 +62,7 @@ export interface Initiative {
   name: string;
   themeId: string;
   parentId: string | null;
+  order: number; // Explicit sort order (lower = higher in list)
   liveDate?: string | undefined; // Go-live date for parent initiatives (e.g., "LIVE 29th June")
   dueDate?: string | undefined; // UAT delivery date for child items (e.g., "15th May")
   notes: string;

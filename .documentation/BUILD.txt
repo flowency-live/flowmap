@@ -1,0 +1,125 @@
+2026-04-15T16:11:48.768Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2026-04-15T16:11:49.360Z [INFO]: # Cloning repository: git@github.com:flowency-live/flowmap.git
+2026-04-15T16:11:50.330Z [INFO]: 
+2026-04-15T16:11:50.330Z [INFO]: Cloning into 'flowmap'...
+2026-04-15T16:11:50.331Z [INFO]: # Checking for Git submodules at: /codebuild/output/src1961991352/src/flowmap/.gitmodules
+2026-04-15T16:11:50.340Z [INFO]: # Retrieving environment cache...
+2026-04-15T16:11:50.373Z [WARNING]: ! Unable to write cache: {"code":"ERR_BAD_REQUEST","message":"Request failed with status code 404"})}
+2026-04-15T16:11:50.373Z [INFO]: ---- Setting Up SSM Secrets ----
+2026-04-15T16:11:50.373Z [INFO]: SSM params {"Path":"/amplify/d1i0owfa4h2yjw/main/","WithDecryption":true}
+2026-04-15T16:11:51.370Z [INFO]: # No package override configuration found.
+2026-04-15T16:11:51.374Z [INFO]: # Retrieving cache...
+2026-04-15T16:11:51.413Z [INFO]: # Retrieved cache
+2026-04-15T16:11:56.096Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2026-04-15T16:11:56.107Z [INFO]: ## Starting Frontend Build
+                                 # Starting phase: preBuild
+                                 # Executing command: npm ci
+2026-04-15T16:12:13.119Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2026-04-15T16:12:13.125Z [WARNING]: npm warn While resolving: @xstate/react@3.2.2
+                                    npm warn Found: react@19.2.5
+                                    npm warn node_modules/react
+                                    npm warn   react@"^19.0.0" from the root project
+                                    npm warn   49 more (@aws-amplify/ui-react, @aws-amplify/ui-react-core, ...)
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer react@"^16.8.0 || ^17.0.0 || ^18.0.0" from @xstate/react@3.2.2
+                                    npm warn node_modules/@aws-amplify/ui-react-core/node_modules/@xstate/react
+                                    npm warn   @xstate/react@"^3.2.2" from @aws-amplify/ui-react-core@3.6.3
+                                    npm warn   node_modules/@aws-amplify/ui-react-core
+                                    npm warn
+                                    npm warn Conflicting peer dependency: react@18.3.1
+                                    npm warn node_modules/react
+                                    npm warn   peer react@"^16.8.0 || ^17.0.0 || ^18.0.0" from @xstate/react@3.2.2
+                                    npm warn   node_modules/@aws-amplify/ui-react-core/node_modules/@xstate/react
+                                    npm warn     @xstate/react@"^3.2.2" from @aws-amplify/ui-react-core@3.6.3
+                                    npm warn     node_modules/@aws-amplify/ui-react-core
+2026-04-15T16:12:13.137Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2026-04-15T16:12:13.137Z [WARNING]: npm warn While resolving: @xstate/react@3.2.2
+                                    npm warn Found: react@19.2.5
+                                    npm warn node_modules/react
+                                    npm warn   react@"^19.0.0" from the root project
+                                    npm warn   49 more (@aws-amplify/ui-react, @aws-amplify/ui-react-core, ...)
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer react@"^16.8.0 || ^17.0.0 || ^18.0.0" from @xstate/react@3.2.2
+                                    npm warn node_modules/@aws-amplify/ui-react/node_modules/@xstate/react
+                                    npm warn   @xstate/react@"^3.2.2" from @aws-amplify/ui-react@6.15.3
+                                    npm warn   node_modules/@aws-amplify/ui-react
+                                    npm warn
+                                    npm warn Conflicting peer dependency: react@18.3.1
+                                    npm warn node_modules/react
+                                    npm warn   peer react@"^16.8.0 || ^17.0.0 || ^18.0.0" from @xstate/react@3.2.2
+                                    npm warn   node_modules/@aws-amplify/ui-react/node_modules/@xstate/react
+                                    npm warn     @xstate/react@"^3.2.2" from @aws-amplify/ui-react@6.15.3
+                                    npm warn     node_modules/@aws-amplify/ui-react
+2026-04-15T16:12:13.244Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2026-04-15T16:12:13.245Z [WARNING]: npm warn While resolving: @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn Found: zod@3.25.17
+                                    npm warn node_modules/@aws-amplify/backend-data/node_modules/@aws-amplify/data-construct/node_modules/@aws-amplify/backend-output-schemas/node_modules/zod
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer zod@"3.25.17" from @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn node_modules/@aws-amplify/backend-data/node_modules/@aws-amplify/data-construct/node_modules/@aws-amplify/backend-output-schemas
+                                    npm warn   bundled @aws-amplify/backend-output-schemas@"^1.0.0" from @aws-amplify/data-construct@1.17.2
+                                    npm warn   node_modules/@aws-amplify/backend-data/node_modules/@aws-amplify/data-construct
+                                    npm warn   2 more (@aws-amplify/ai-constructs, @aws-amplify/backend-output-storage)
+2026-04-15T16:12:13.355Z [WARNING]: npm warn ERESOLVE overriding peer dependency
+2026-04-15T16:12:13.355Z [WARNING]: npm warn While resolving: @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn Found: zod@3.25.17
+                                    npm warn node_modules/@aws-amplify/backend-data/node_modules/@aws-amplify/graphql-api-construct/node_modules/@aws-amplify/backend-output-schemas/node_modules/zod
+                                    npm warn
+                                    npm warn Could not resolve dependency:
+                                    npm warn peer zod@"3.25.17" from @aws-amplify/backend-output-schemas@1.8.0
+                                    npm warn node_modules/@aws-amplify/backend-data/node_modules/@aws-amplify/graphql-api-construct/node_modules/@aws-amplify/backend-output-schemas
+                                    npm warn   bundled @aws-amplify/backend-output-schemas@"^1.0.0" from @aws-amplify/graphql-api-construct@1.21.2
+                                    npm warn   node_modules/@aws-amplify/backend-data/node_modules/@aws-amplify/graphql-api-construct
+                                    npm warn   2 more (@aws-amplify/ai-constructs, @aws-amplify/backend-output-storage)
+2026-04-15T16:12:13.562Z [WARNING]: npm error code EUSAGE
+2026-04-15T16:12:13.563Z [WARNING]: npm error
+                                    npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+                                    npm error
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@5.4.1 from lock file
+                                    npm error Missing: strnum@2.2.3 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@5.2.5 from lock file
+                                    npm error Missing: strnum@2.2.3 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@5.4.1 from lock file
+                                    npm error Missing: strnum@2.2.3 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error Missing: fast-xml-parser@5.2.5 from lock file
+                                    npm error Missing: strnum@2.2.3 from lock file
+                                    npm error Missing: fast-xml-parser@4.4.1 from lock file
+                                    npm error
+                                    npm error Clean install a project
+                                    npm error
+                                    npm error Usage:
+                                    npm error npm ci
+                                    npm error
+                                    npm error Options:
+                                    npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+                                    npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+                                    npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+                                    npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+                                    npm error [--no-bin-links] [--no-fund] [--dry-run]
+                                    npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+                                    npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+                                    npm error
+                                    npm error aliases: clean-install, ic, install-clean, isntall-clean
+                                    npm error
+                                    npm error Run "npm help ci" for more info
+2026-04-15T16:12:13.563Z [WARNING]: npm error A complete log of this run can be found in: /root/.npm/_logs/2026-04-15T16_11_59_724Z-debug-0.log
+2026-04-15T16:12:13.573Z [ERROR]: !!! Build failed
+2026-04-15T16:12:13.573Z [ERROR]: !!! Error: Command failed with exit code 1
+2026-04-15T16:12:13.573Z [INFO]: # Starting environment caching...
+2026-04-15T16:12:13.573Z [INFO]: # Environment caching completed
+

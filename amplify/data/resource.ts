@@ -42,6 +42,9 @@ const schema = a.schema({
    * Dates:
    * - liveDate: Go-live date for parent initiatives (e.g., "LIVE 29th June")
    * - dueDate: UAT delivery date for child items (e.g., "15th May")
+   *
+   * Ordering:
+   * - order: Explicit sort order (lower = higher in list)
    */
   Initiative: a
     .model({
@@ -49,6 +52,7 @@ const schema = a.schema({
       themeId: a.id().required(),
       theme: a.belongsTo('Theme', 'themeId'),
       parentId: a.id(),
+      order: a.integer().default(0), // Explicit sort order
       liveDate: a.string(), // Go-live date for parent initiatives
       dueDate: a.string(), // UAT delivery date for child items
       notes: a.string().default(''),

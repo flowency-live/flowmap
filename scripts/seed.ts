@@ -131,14 +131,14 @@ async function seedInitiatives(
   const initiatives = roadmapData.initiatives as RoadmapInitiative[];
   let parentCount = 0;
   let childCount = 0;
+  let orderCounter = 0;
 
   for (const initiative of initiatives) {
-    // Create parent initiative
-    // Note: liveDate/dueDate fields require backend schema to be redeployed
-    // The CI/CD build triggered by push to main will update the schema
+    // Create parent initiative with explicit order
     const parentData = {
       name: initiative.name,
       themeId: theme.id,
+      order: orderCounter++,
       notes: '',
       sequencingNotes: '',
       teamStates: createTeamStates(teams, initiative.rollup_by_team),
@@ -151,15 +151,15 @@ async function seedInitiatives(
       continue;
     }
     parentCount++;
-    console.log(`  Created parent: ${initiative.name}`);
+    console.log(`  Created parent: ${initiative.name} (order: ${parentData.order})`);
 
-    // Create child initiatives
+    // Create child initiatives with explicit order
     for (const child of initiative.children) {
-      // Note: dueDate field requires backend schema to be redeployed
       const childData = {
         name: child.name,
         themeId: theme.id,
         parentId: parentResult.id,
+        order: orderCounter++,
         notes: '',
         sequencingNotes: '',
         teamStates: createTeamStates(teams, child.status_by_team),
@@ -168,7 +168,7 @@ async function seedInitiatives(
       const { data: childResult } = await client.models.Initiative.create(childData);
       if (childResult) {
         childCount++;
-        console.log(`    - ${child.name}`);
+        console.log(`    - ${child.name} (order: ${childData.order})`);
       }
     }
   }
