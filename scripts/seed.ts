@@ -134,18 +134,20 @@ async function seedInitiatives(
 
   for (const initiative of initiatives) {
     // Create parent initiative
+    // Note: liveDate/dueDate fields require backend schema to be redeployed
+    // The CI/CD build triggered by push to main will update the schema
     const parentData = {
       name: initiative.name,
       themeId: theme.id,
-      liveDate: initiative.due_date || undefined,
       notes: '',
       sequencingNotes: '',
       teamStates: createTeamStates(teams, initiative.rollup_by_team),
     };
 
-    const { data: parentResult } = await client.models.Initiative.create(parentData);
+    const { data: parentResult, errors } = await client.models.Initiative.create(parentData);
     if (!parentResult) {
       console.error(`  Failed to create parent: ${initiative.name}`);
+      if (errors) console.error('    Errors:', JSON.stringify(errors, null, 2));
       continue;
     }
     parentCount++;
@@ -153,11 +155,11 @@ async function seedInitiatives(
 
     // Create child initiatives
     for (const child of initiative.children) {
+      // Note: dueDate field requires backend schema to be redeployed
       const childData = {
         name: child.name,
         themeId: theme.id,
         parentId: parentResult.id,
-        dueDate: child.due_date && child.due_date !== '-' ? child.due_date : undefined,
         notes: '',
         sequencingNotes: '',
         teamStates: createTeamStates(teams, child.status_by_team),
