@@ -14,11 +14,12 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
  */
 const schema = a.schema({
   /**
-   * Theme - Portfolio grouping for initiatives
+   * Theme - Portfolio grouping for initiatives (brand)
    */
   Theme: a
     .model({
       name: a.string().required(),
+      faviconUrl: a.string(), // URL to brand favicon/logo
       initiatives: a.hasMany('Initiative', 'themeId'),
     })
     .authorization((allow) => [allow.publicApiKey()]),

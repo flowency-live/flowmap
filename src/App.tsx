@@ -6,6 +6,7 @@ import { Heatmap } from '@/pages/Heatmap';
 import { ConstraintLens } from '@/pages/ConstraintLens';
 import { Simulator } from '@/pages/Simulator';
 import { TeamKanban } from '@/pages/TeamKanban';
+import { Config } from '@/pages/Config';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { client } from '@/lib/amplifyClient';
 import type { Theme, Team, Initiative, FlowState, Effort } from '@/types';
@@ -196,6 +197,7 @@ function App() {
           const theme: Theme = {
             id: data.id,
             name: data.name,
+            faviconUrl: data.faviconUrl ?? undefined,
           };
           _applyThemeUpdate(theme);
         }
@@ -209,6 +211,7 @@ function App() {
           const theme: Theme = {
             id: data.id,
             name: data.name,
+            faviconUrl: data.faviconUrl ?? undefined,
           };
           _applyThemeUpdate(theme);
         }
@@ -276,6 +279,7 @@ function App() {
               <Route path="/" component={Heatmap} />
               <Route path="/constraint" component={ConstraintLens} />
               <Route path="/simulator" component={Simulator} />
+              <Route path="/config" component={Config} />
               <Route path="/team/:teamId" component={TeamKanban} />
               <Route>
                 <div className="p-8">

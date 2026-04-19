@@ -31,6 +31,7 @@ interface PortfolioStore extends PortfolioState {
   addTheme: (name: string) => Promise<void>;
   removeTheme: (id: string) => Promise<void>;
   renameTheme: (id: string, name: string) => Promise<void>;
+  updateThemeFavicon: (id: string, faviconUrl: string) => Promise<void>;
 
   // Internal: apply updates from subscriptions
   _applyInitiativeUpdate: (initiative: Initiative) => void;
@@ -120,10 +121,11 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         client.models.Initiative.list(),
       ]);
 
-      const themes: Theme[] = (themesResult.data ?? []).map((t: { id: string; name: string }) => ({
-        id: t.id,
-        name: t.name,
-      }));
+      const themes: Theme[] = (themesResult.data ?? []).map((t: { id: string; name: string; faviconUrl?: string | null }) => {
+        const theme: Theme = { id: t.id, name: t.name };
+        if (t.faviconUrl) theme.faviconUrl = t.faviconUrl;
+        return theme;
+      });
 
       const teams: Team[] = (teamsResult.data ?? []).map((t: { id: string; name: string; isPrimaryConstraint?: boolean | null }) => ({
         id: t.id,
@@ -533,6 +535,34 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       console.error('Failed to rename theme:', err);
       set((s) => ({
         themes: s.themes.map((t) => (t.id === id ? { ...t, name: theme.name } : t)),
+      }));
+    }
+  },
+
+  updateThemeFavicon: async (id, faviconUrl) => {
+    const theme = get().themes.find((t) => t.id === id);
+    if (!theme) return;
+
+    set((s) => ({
+      themes: s.themes.map((t) => {
+        if (t.id !== id) return t;
+        const updated: Theme = { id: t.id, name: t.name };
+        if (faviconUrl) updated.faviconUrl = faviconUrl;
+        return updated;
+      }),
+    }));
+
+    try {
+      await client.models.Theme.update({ id, faviconUrl: faviconUrl || null });
+    } catch (err) {
+      console.error('Failed to update theme favicon:', err);
+      set((s) => ({
+        themes: s.themes.map((t) => {
+          if (t.id !== id) return t;
+          const restored: Theme = { id: t.id, name: t.name };
+          if (theme.faviconUrl) restored.faviconUrl = theme.faviconUrl;
+          return restored;
+        }),
       }));
     }
   },

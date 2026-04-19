@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, AlertTriangle, Zap, Info } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Zap, Settings, Info } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -14,6 +14,7 @@ const navItems = [
   { href: '/', label: 'Portfolio Heatmap', icon: LayoutDashboard },
   { href: '/constraint', label: 'Constraint Lens', icon: AlertTriangle },
   { href: '/simulator', label: 'Unlock Simulator', icon: Zap },
+  { href: '/config', label: 'Configuration', icon: Settings },
 ];
 
 function TechStackContent() {

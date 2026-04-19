@@ -20,6 +20,7 @@ export type FlowState =
 export interface Theme {
   id: string;
   name: string;
+  faviconUrl?: string;
 }
 
 export interface Team {
