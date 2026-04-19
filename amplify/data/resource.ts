@@ -60,6 +60,7 @@ const schema = a.schema({
       notes: a.string().default(''),
       sequencingNotes: a.string().default(''),
       teamStates: a.json(), // JSON string of Record<teamId, FlowState>
+      teamEfforts: a.json(), // JSON string of Record<teamId, Effort>
       teamNotes: a.json(), // JSON string of Record<teamId, string> - notes per team
     })
     .authorization((allow) => [allow.publicApiKey()])

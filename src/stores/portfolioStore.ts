@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Theme, Team, Initiative, FlowState, Effort, PortfolioState } from '@/types';
 import { client } from '@/lib/amplifyClient';
+import { toast } from '@/stores/toastStore';
 
 interface PortfolioStore extends PortfolioState {
   // Loading state
@@ -146,6 +147,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     } catch (err) {
       console.error('Failed to load portfolio:', err);
       set({ error: 'Failed to load data', isLoading: false });
+      toast.error('Failed to load portfolio data');
     }
   },
 
@@ -171,6 +173,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       });
     } catch (err) {
       console.error('Failed to update team state:', err);
+      toast.error('Failed to update state');
       // Revert on error
       set((s) => ({
         initiatives: s.initiatives.map((init) =>
@@ -200,9 +203,21 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       ),
     }));
 
-    // Note: teamEfforts not yet persisted to AppSync - schema update needed
-    // For now, efforts are kept in local state only
-    console.log('Effort updated locally:', initiativeId, teamId, effort);
+    try {
+      await client.models.Initiative.update({
+        id: initiativeId,
+        teamEfforts: JSON.stringify(newTeamEfforts),
+      });
+    } catch (err) {
+      console.error('Failed to update team effort:', err);
+      toast.error('Failed to update effort');
+      // Rollback on error
+      set((s) => ({
+        initiatives: s.initiatives.map((init) =>
+          init.id === initiativeId ? { ...init, teamEfforts: initiative.teamEfforts } : init
+        ),
+      }));
+    }
   },
 
   updateTeamNotes: async (initiativeId, teamId, notes) => {
@@ -304,9 +319,11 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       if (result.data) {
         const newInitiative = toLocalInitiative(result.data);
         set((s) => ({ initiatives: [...s.initiatives, newInitiative] }));
+        toast.success('Initiative created');
       }
     } catch (err) {
       console.error('Failed to add initiative:', err);
+      toast.error('Failed to create initiative');
     }
   },
 
@@ -330,6 +347,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       await client.models.Initiative.delete({ id });
     } catch (err) {
       console.error('Failed to delete initiative:', err);
+      toast.error('Failed to delete initiative');
       // Reload on error
       get().loadPortfolio();
     }
@@ -463,9 +481,11 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
             })
           )
         );
+        toast.success('Team added');
       }
     } catch (err) {
       console.error('Failed to add team:', err);
+      toast.error('Failed to add team');
     }
   },
 
@@ -499,6 +519,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       );
     } catch (err) {
       console.error('Failed to delete team:', err);
+      toast.error('Failed to delete team');
       get().loadPortfolio();
     }
   },

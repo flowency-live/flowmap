@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Router, Route, Switch } from 'wouter';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Sidebar } from '@/components/Sidebar';
+import { Toaster } from '@/components/Toaster';
 import { Heatmap } from '@/pages/Heatmap';
 import { ConstraintLens } from '@/pages/ConstraintLens';
 import { Simulator } from '@/pages/Simulator';
@@ -290,6 +291,7 @@ function App() {
           </Router>
         </main>
       </div>
+      <Toaster />
     </TooltipProvider>
   );
 }
