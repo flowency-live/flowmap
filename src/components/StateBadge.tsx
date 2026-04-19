@@ -32,11 +32,15 @@ const STATE_ICONS: Record<FlowState, LucideIcon> = {
   Blocked: XCircle,
 };
 
+// Tighter sizes for heatmap density
 const SIZE_CLASSES = {
-  sm: 'h-5 px-1.5 text-[10px]',
-  md: 'h-6 px-2 text-[11px]',
-  lg: 'h-7 px-2.5 text-xs',
+  sm: 'h-[18px] px-1 text-[9px]',
+  md: 'h-[22px] px-1.5 text-[10px]',
+  lg: 'h-6 px-2 text-[11px]',
 };
+
+// States that need visual emphasis (problems/bottlenecks)
+const EMPHASIS_STATES: FlowState[] = ['Constrained', 'Blocked'];
 
 export function StateBadge({
   state,
@@ -47,6 +51,8 @@ export function StateBadge({
 }: StateBadgeProps) {
   const config = STATE_CONFIG[state];
   const Icon = STATE_ICONS[state];
+  const needsEmphasis = EMPHASIS_STATES.includes(state);
+  const isNA = state === 'N/A';
 
   return (
     <div
@@ -54,21 +60,25 @@ export function StateBadge({
       style={{
         backgroundColor: config.bgColor,
         color: config.textColor,
+        // Add ring for emphasis states
+        boxShadow: needsEmphasis ? `inset 0 0 0 1.5px ${config.textColor}` : undefined,
       }}
       className={cn(
-        'inline-flex items-center justify-center rounded font-bold tracking-wide',
+        'inline-flex items-center justify-center rounded tracking-wide',
         SIZE_CLASSES[size],
+        // N/A is de-emphasized, others are bold
+        isNA ? 'font-medium' : 'font-bold',
         className
       )}
     >
       {showIcon && state !== 'N/A' ? (
         <span className="flex items-center gap-1">
-          <Icon className="w-3.5 h-3.5 shrink-0" />
+          <Icon className="w-3 h-3 shrink-0" />
           {showLabel && config.label}
         </span>
       ) : (
         // Use short form only for N/A
-        state === 'N/A' ? config.short : config.label
+        isNA ? config.short : config.label
       )}
     </div>
   );

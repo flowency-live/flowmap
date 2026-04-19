@@ -14,6 +14,7 @@ interface StatePickerProps {
   onEffortChange?: (effort: Effort | null) => void;
   onNoteChange?: (note: string) => void;
   disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export function StatePicker({
   onEffortChange,
   onNoteChange,
   disabled = false,
+  size = 'sm',
   className,
 }: StatePickerProps) {
   const [open, setOpen] = useState(false);
@@ -85,13 +87,13 @@ export function StatePicker({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="relative">
-            <StateBadge state={value} size="lg" />
+            <StateBadge state={value} size={size} />
             {hasNote && (
-              <MessageSquare className="absolute -top-1 -right-1 h-2.5 w-2.5 text-primary fill-primary" />
+              <MessageSquare className="absolute -top-0.5 -right-0.5 h-2 w-2 text-primary fill-primary" />
             )}
           </div>
           {effort && (
-            <span className="text-[10px] font-medium text-muted-foreground">
+            <span className="text-[9px] font-medium text-muted-foreground leading-none">
               {effort}
             </span>
           )}

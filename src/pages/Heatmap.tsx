@@ -334,12 +334,12 @@ export function Heatmap() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-fixed">
               <colgroup>
-                <col className="w-[220px]" />
-                <col className="w-[80px]" />
+                <col className="w-[200px]" />
+                <col className="w-[90px]" />
                 {teams.map((team) => (
-                  <col key={team.id} className="w-[68px]" />
+                  <col key={team.id} className="w-[72px]" />
                 ))}
-                <col className="w-[50px]" />
+                <col className="w-[40px]" />
               </colgroup>
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
@@ -432,20 +432,20 @@ export function Heatmap() {
 
                   const rows: React.ReactNode[] = [];
 
-                  // Parent Initiative Row
+                  // Parent Initiative Row - bold with gap before
                   rows.push(
                     <tr
                       key={parentInit.id}
                       className={cn(
-                        'border-b-2 border-border/60 cursor-pointer transition-colors group',
+                        'border-t-4 border-t-transparent border-b border-border/40 cursor-pointer transition-colors group',
                         hasChildren
-                          ? 'bg-muted/30 hover:bg-muted/50 border-l-2 border-l-primary/40'
-                          : 'hover:bg-muted/30',
-                        isSelected && 'bg-primary/5 hover:bg-primary/10'
+                          ? 'bg-muted/40 hover:bg-muted/60'
+                          : 'bg-muted/20 hover:bg-muted/40',
+                        isSelected && 'bg-primary/10 hover:bg-primary/15'
                       )}
                       onClick={() => setSelectedInit(parentInit)}
                     >
-                      <td className="px-3 py-2 h-10">
+                      <td className="px-2 py-1.5 h-8">
                         <div className="flex items-center gap-1.5">
                           {hasChildren && (
                             <button
@@ -520,7 +520,7 @@ export function Heatmap() {
                           )}
                         </div>
                       </td>
-                      <td className="px-2 py-2 h-10" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-1.5 py-1 h-8" onClick={(e) => e.stopPropagation()}>
                         <Popover
                           open={editingDateId === parentInit.id}
                           onOpenChange={(open) => {
@@ -563,10 +563,10 @@ export function Heatmap() {
                       {teams.map((team) => (
                         <td
                           key={team.id}
-                          className="px-1 py-2 text-center h-10"
+                          className="px-0.5 py-1 text-center h-8"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-center justify-center h-5">
+                          <div className="flex items-center justify-center">
                             {hasChildren ? (
                               <StateBadge
                                 state={displayStates[team.id] ?? 'N/A'}
@@ -605,12 +605,12 @@ export function Heatmap() {
                         <tr
                           key={child.id}
                           className={cn(
-                            'border-b border-border/40 hover:bg-muted/20 cursor-pointer transition-colors group bg-background',
-                            isChildSelected && 'bg-primary/5 hover:bg-primary/10'
+                            'border-b border-border/20 hover:bg-muted/30 cursor-pointer transition-colors group',
+                            isChildSelected && 'bg-primary/10 hover:bg-primary/15'
                           )}
                           onClick={() => setSelectedInit(child)}
                         >
-                          <td className="px-3 py-1.5 pl-8 h-9">
+                          <td className="px-2 py-1 pl-6 h-7">
                             <div className="flex items-center gap-1.5">
                               <span className="text-muted-foreground text-xs shrink-0">└</span>
                               {isChildRenaming ? (
@@ -656,7 +656,7 @@ export function Heatmap() {
                               )}
                             </div>
                           </td>
-                          <td className="px-2 py-1.5 h-9" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-1.5 py-0.5 h-7" onClick={(e) => e.stopPropagation()}>
                             <Popover
                               open={editingDateId === child.id}
                               onOpenChange={(open) => {
@@ -699,10 +699,10 @@ export function Heatmap() {
                           {teams.map((team) => (
                             <td
                               key={team.id}
-                              className="px-1 py-1.5 text-center h-9"
+                              className="px-0.5 py-0.5 text-center h-7"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <div className="flex items-center justify-center h-5">
+                              <div className="flex items-center justify-center">
                                 <StatePicker
                                   value={child.teamStates[team.id] ?? 'N/S'}
                                   effort={child.teamEfforts[team.id]}

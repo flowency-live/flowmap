@@ -90,53 +90,61 @@ export interface StateConfig {
 }
 
 export const STATE_CONFIG: Record<FlowState, StateConfig> = {
+  // N/A: Nearly invisible - this is noise, kill it visually
   'N/A': {
     label: 'Not Applicable',
     short: 'N/A',
-    bgColor: '#D9D9D9',
-    textColor: '#595959',
+    bgColor: '#F5F5F5',
+    textColor: '#BDBDBD',
   },
+  // Not Started: Soft amber - waiting, needs attention
   'N/S': {
     label: 'Not Started',
     short: 'N/S',
-    bgColor: '#FFD7A8',
-    textColor: '#9C5700',
+    bgColor: '#FFE0B2',
+    textColor: '#E65100',
   },
+  // Discovery: Light yellow - early stage exploration
   Discovery: {
     label: 'Discovery',
     short: 'Disc',
-    bgColor: '#FFF2CC',
-    textColor: '#7F6000',
+    bgColor: '#FFF9C4',
+    textColor: '#F57F17',
   },
+  // Ready: Lime green - go signal, ready to start
   Ready: {
     label: 'Ready',
     short: 'Ready',
-    bgColor: '#FFF2CC',
-    textColor: '#006100',
+    bgColor: '#DCEDC8',
+    textColor: '#33691E',
   },
+  // Constrained: INTENSE purple - bottleneck, must POP
   Constrained: {
     label: 'Constrained',
     short: 'Const',
-    bgColor: '#E4D7F5',
-    textColor: '#5B2C87',
+    bgColor: '#CE93D8',
+    textColor: '#4A148C',
   },
+  // Doing: Strong blue - actively in progress
   Doing: {
     label: 'Doing',
     short: 'Doing',
-    bgColor: '#BDD7EE',
-    textColor: '#1F3864',
+    bgColor: '#90CAF9',
+    textColor: '#0D47A1',
   },
+  // Done: Rich green - success, complete
   Done: {
     label: 'Done',
     short: 'Done',
-    bgColor: '#C6EFCE',
-    textColor: '#006100',
+    bgColor: '#A5D6A7',
+    textColor: '#1B5E20',
   },
+  // Blocked: INTENSE red - problem, must POP
   Blocked: {
     label: 'Blocked',
     short: 'Block',
-    bgColor: '#FFC7CE',
-    textColor: '#9C0006',
+    bgColor: '#EF9A9A',
+    textColor: '#B71C1C',
   },
 };
 
