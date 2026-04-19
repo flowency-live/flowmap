@@ -6,6 +6,7 @@ import { Toaster } from '@/components/Toaster';
 import { Heatmap } from '@/pages/Heatmap';
 import { ConstraintLens } from '@/pages/ConstraintLens';
 import { Simulator } from '@/pages/Simulator';
+import { Timeline } from '@/pages/Timeline';
 import { TeamKanban } from '@/pages/TeamKanban';
 import { Config } from '@/pages/Config';
 import { usePortfolioStore } from '@/stores/portfolioStore';
@@ -356,6 +357,7 @@ function App() {
               <Route path="/" component={Heatmap} />
               <Route path="/constraint" component={ConstraintLens} />
               <Route path="/simulator" component={Simulator} />
+              <Route path="/timeline" component={Timeline} />
               <Route path="/config" component={Config} />
               <Route path="/team/:teamId" component={TeamKanban} />
               <Route>

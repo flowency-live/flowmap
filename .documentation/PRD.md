@@ -1,6 +1,6 @@
 # FlowMap Product Requirements Document
 
-> **Version**: 0.1.0
+> **Version**: 0.2.0
 > **Last Updated**: 2026-04-19
 > **Status**: Retrospective PRD (documenting current implementation)
 
@@ -80,10 +80,22 @@ interface Team {
   id: string;
   name: string;
   isPrimaryConstraint: boolean;
+  capacityConfig?: TeamCapacity;
+}
+
+interface TeamCapacity {
+  streams: number;     // Number of parallel work streams
+  streamPct: number;   // Capacity percentage per stream (e.g., 45%)
+  bauPct: number;      // BAU allocation percentage (e.g., 10%)
 }
 ```
 **Purpose**: Delivery teams that work on initiatives
 **Examples**: UPJ, UIE, UNC, Logan, DataE, DataS
+
+**Capacity Model**:
+- `streams × streamPct + bauPct` = total capacity (should be ≤100%)
+- Example: UPJ with 2 streams at 45% each + 10% BAU = 100%
+- Configured via Config page, used for timeline planning (Phase 3)
 
 ### 2.3 Initiative (Parent/Child Hierarchy)
 ```typescript
@@ -116,7 +128,27 @@ interface Initiative {
 type Effort = '1d' | '3d' | '1w' | '2w' | '3w' | '4w' | '5w' | '6w' | '7w' | '8w' | '9w' | '10w';
 ```
 
-> **Note**: Effort estimates are currently stored locally only and **not persisted to AppSync**. See [Known Gaps](#8-incomplete-features--known-gaps).
+Effort estimates are stored per-team in `Initiative.teamEfforts` and persisted to AppSync.
+
+### 2.5 Dependency (Cross-Initiative Blocking)
+```typescript
+interface Dependency {
+  id: string;
+  fromInitiativeId: string;  // The blocking initiative (must complete first)
+  toInitiativeId: string;    // The blocked initiative (waiting)
+  notes?: string;            // Optional description
+}
+```
+
+**Purpose**: Track when one initiative blocks another across teams.
+
+**Example**: UIE's "Insurer Dynamic Display" blocks UPJ's "Exclude Rebroke"
+
+**Features**:
+- Managed via Initiative Detail panel (Dependencies section)
+- Cycle detection prevents circular references
+- GSIs for efficient querying: `byFromInitiative`, `byToInitiative`
+- Real-time sync via WebSocket subscriptions
 
 ---
 
@@ -276,14 +308,13 @@ Return first state found in any child
 **Layout**:
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ ← Back to Heatmap                    UPJ Workload (12 items)            │
+│ ← Back to Heatmap          UPJ Workload (12 active items) [Expand All]  │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ INITIATIVE     │ N/S │ DISC │ READY │ CONST │ DOING │ DONE │ BLOCKED   │
 ├────────────────┼─────┼──────┼───────┼───────┼───────┼──────┼───────────┤
-│ > M&S Theme    │     │      │       │       │       │      │           │
-│   > Onboarding │     │      │       │       │       │      │           │
-│     └ API Int  │     │      │       │       │[DOING]│      │           │
-│     └ Data Mig │     │      │[READY]│       │       │      │           │
+│ > Onboarding   │     │      │       │       │       │      │           │
+│   └ API Int    │     │      │       │       │[DOING]│      │           │
+│   └ Data Mig   │     │      │[READY]│       │       │      │           │
 │ > NatWest      │     │      │       │       │       │      │           │
 │   └ Portal     │[N/S]│      │       │       │       │      │           │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -291,27 +322,36 @@ Return first state found in any child
 
 **Key Features**:
 - Shows only initiatives where team has non-N/A state
-- Grouped by theme and parent/child hierarchy
+- Flat parent/child hierarchy (no theme grouping)
 - State badges appear in matching column
 - Click state badge to change (moves to new column)
-- Collapsible themes and parents
+- Collapsible parents (collapsed by default)
+- Expand/Collapse All toggle in header
 
 ---
 
-### 4.5 Configuration (`/config`) — BRANDING SETTINGS
+### 4.5 Configuration (`/config`) — BRANDING & CAPACITY SETTINGS
 
-**Status**: ✅ WORKING (Favicon Management Only)
+**Status**: ✅ WORKING
 
-**Purpose**: Manage initiative branding and settings.
+**Purpose**: Manage initiative branding and team capacity.
 
 **Current Features**:
+
+**Initiative Branding**:
 - Edit favicon URLs for parent initiatives
 - Preview favicon images
 - Help text for finding favicon URLs
 
+**Team Capacity**:
+- Configure parallel work streams per team
+- Set capacity percentage per stream
+- Set BAU (business-as-usual) allocation
+- Visual total capacity calculation
+- Warning when total exceeds 100%
+
 **Future Expansion**:
 - Theme management
-- Team settings
 - Export/Import
 - User preferences
 
@@ -328,6 +368,7 @@ FlowMap subscribes to all CRUD events on mount:
 | Initiative | onCreate, onUpdate, onDelete | `_applyInitiativeUpdate/Delete` |
 | Team | onCreate, onUpdate, onDelete | `_applyTeamUpdate/Delete` |
 | Theme | onCreate, onUpdate, onDelete | `_applyThemeUpdate/Delete` |
+| Dependency | onCreate, onUpdate, onDelete | `_applyDependencyUpdate/Delete` |
 
 ### Multi-User Scenarios
 
@@ -430,10 +471,10 @@ For parent initiatives, compute aggregate state per team from children:
 
 | Gap | Current State | Impact | Priority |
 |-----|---------------|--------|----------|
-| **Effort Persistence** | Local only, not saved to AppSync | Lost on refresh | HIGH |
 | **Toast Notifications** | Errors logged to console only | Users don't see failures | HIGH |
 | **Constraint Lens Intelligence** | Basic queue ranking | Limited insight | MEDIUM |
 | **Simulator Depth** | Single initiative, no timeline | Basic scenarios only | MEDIUM |
+| **Timeline View** | Not yet implemented | Capacity data not visualized | MEDIUM |
 
 ### Missing Features
 
@@ -466,13 +507,21 @@ For parent initiatives, compute aggregate state per team from children:
 
 ## 9. Future Roadmap
 
-### Phase 2: Data Completeness
-- [ ] Persist effort estimates to AppSync
+### Phase 2: Data Completeness ✅ COMPLETE
+- [x] Persist effort estimates to AppSync
+- [x] Team capacity configuration
+- [x] Cross-initiative dependencies with cycle detection
 - [ ] Add toast notifications for user feedback
 - [ ] Implement audit trail (createdAt, updatedAt, createdBy)
 - [ ] Add user authentication (Cognito)
 
-### Phase 3: Enhanced Analytics
+### Phase 3: Timeline View
+- [ ] Gantt-style swimlane view per team
+- [ ] Visualize team capacity utilization
+- [ ] Show dependencies between initiatives
+- [ ] Risk indicators for capacity conflicts
+
+### Phase 4: Enhanced Analytics
 - [ ] Constraint Lens improvements (trends, capacity)
 - [ ] Simulator enhancements (timeline, cost, multi-scenario)
 - [ ] Export to CSV/PDF
@@ -525,4 +574,5 @@ Blocked → Doing (unblocked)
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1.0 | 2026-04-19 | Generated | Initial retrospective PRD |
+| 0.2.0 | 2026-04-19 | Generated | Added team capacity model, dependencies with cycle detection, effort persistence, team kanban refactor |
 

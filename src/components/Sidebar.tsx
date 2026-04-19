@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, AlertTriangle, Zap, Settings, Info, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Zap, Calendar, Settings, Info, Sun, Moon } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import {
   Sheet,
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/', label: 'Portfolio Heatmap', icon: LayoutDashboard },
   { href: '/constraint', label: 'Constraint Lens', icon: AlertTriangle },
   { href: '/simulator', label: 'Unlock Simulator', icon: Zap },
+  { href: '/timeline', label: 'Timeline', icon: Calendar },
   { href: '/config', label: 'Configuration', icon: Settings },
 ];
 
