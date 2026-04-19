@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Theme, Team, Initiative, FlowState, Effort, PortfolioState } from '@/types';
+import type { Theme, Team, Initiative, FlowState, Effort, PortfolioState, TeamCapacity } from '@/types';
 import { client } from '@/lib/amplifyClient';
 import { toast } from '@/stores/toastStore';
 
@@ -28,6 +28,7 @@ interface PortfolioStore extends PortfolioState {
   addTeam: (name: string) => Promise<void>;
   removeTeam: (id: string) => Promise<void>;
   renameTeam: (id: string, name: string) => Promise<void>;
+  updateTeamCapacity: (id: string, capacityConfig: TeamCapacity | null) => Promise<void>;
 
   // Theme actions
   addTheme: (name: string) => Promise<void>;
@@ -132,11 +133,23 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         return theme;
       });
 
-      const teams: Team[] = (teamsResult.data ?? []).map((t: { id: string; name: string; isPrimaryConstraint?: boolean | null }) => ({
-        id: t.id,
-        name: t.name,
-        isPrimaryConstraint: t.isPrimaryConstraint ?? false,
-      }));
+      const teams: Team[] = (teamsResult.data ?? []).map((t: { id: string; name: string; isPrimaryConstraint?: boolean | null; capacityConfig?: unknown }) => {
+        const team: Team = {
+          id: t.id,
+          name: t.name,
+          isPrimaryConstraint: t.isPrimaryConstraint ?? false,
+        };
+        if (t.capacityConfig) {
+          try {
+            team.capacityConfig = typeof t.capacityConfig === 'string'
+              ? JSON.parse(t.capacityConfig)
+              : t.capacityConfig as TeamCapacity;
+          } catch {
+            // Ignore invalid JSON
+          }
+        }
+        return team;
+      });
 
       // Sort initiatives by explicit order field
       const initiatives: Initiative[] = (initiativesResult.data ?? [])
@@ -538,6 +551,49 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       console.error('Failed to rename team:', err);
       set((s) => ({
         teams: s.teams.map((t) => (t.id === id ? { ...t, name: team.name } : t)),
+      }));
+    }
+  },
+
+  updateTeamCapacity: async (id, capacityConfig) => {
+    const team = get().teams.find((t) => t.id === id);
+    if (!team) return;
+
+    // Optimistic update
+    set((s) => ({
+      teams: s.teams.map((t) => {
+        if (t.id !== id) return t;
+        const updated: Team = { ...t };
+        if (capacityConfig) {
+          updated.capacityConfig = capacityConfig;
+        } else {
+          delete updated.capacityConfig;
+        }
+        return updated;
+      }),
+    }));
+
+    try {
+      await client.models.Team.update({
+        id,
+        capacityConfig: capacityConfig ? JSON.stringify(capacityConfig) : null,
+      });
+      toast.success('Team capacity updated');
+    } catch (err) {
+      console.error('Failed to update team capacity:', err);
+      toast.error('Failed to update capacity');
+      // Rollback on error
+      set((s) => ({
+        teams: s.teams.map((t) => {
+          if (t.id !== id) return t;
+          const restored: Team = { ...t };
+          if (team.capacityConfig) {
+            restored.capacityConfig = team.capacityConfig;
+          } else {
+            delete restored.capacityConfig;
+          }
+          return restored;
+        }),
       }));
     }
   },

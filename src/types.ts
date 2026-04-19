@@ -23,10 +23,23 @@ export interface Theme {
   faviconUrl?: string;
 }
 
+/**
+ * Team capacity configuration for timeline planning
+ * - streams: Number of parallel work streams (e.g., 2 for UPJ)
+ * - streamPct: Capacity percentage per stream (e.g., 45%)
+ * - bauPct: BAU allocation percentage (e.g., 10%)
+ */
+export interface TeamCapacity {
+  streams: number;
+  streamPct: number;
+  bauPct: number;
+}
+
 export interface Team {
   id: string;
   name: string;
   isPrimaryConstraint: boolean;
+  capacityConfig?: TeamCapacity;
 }
 
 export type Effort =

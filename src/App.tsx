@@ -11,7 +11,7 @@ import { Config } from '@/pages/Config';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { client } from '@/lib/amplifyClient';
-import type { Theme, Team, Initiative, FlowState, Effort } from '@/types';
+import type { Theme, Team, Initiative, FlowState, Effort, TeamCapacity } from '@/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SubscriptionData = any;
@@ -176,6 +176,15 @@ function App() {
             name: data.name,
             isPrimaryConstraint: data.isPrimaryConstraint ?? false,
           };
+          if (data.capacityConfig) {
+            try {
+              team.capacityConfig = typeof data.capacityConfig === 'string'
+                ? JSON.parse(data.capacityConfig)
+                : data.capacityConfig as TeamCapacity;
+            } catch {
+              // Ignore invalid JSON
+            }
+          }
           _applyTeamUpdate(team);
         }
       },
@@ -190,6 +199,15 @@ function App() {
             name: data.name,
             isPrimaryConstraint: data.isPrimaryConstraint ?? false,
           };
+          if (data.capacityConfig) {
+            try {
+              team.capacityConfig = typeof data.capacityConfig === 'string'
+                ? JSON.parse(data.capacityConfig)
+                : data.capacityConfig as TeamCapacity;
+            } catch {
+              // Ignore invalid JSON
+            }
+          }
           _applyTeamUpdate(team);
         }
       },

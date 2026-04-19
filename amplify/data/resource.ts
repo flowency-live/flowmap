@@ -26,11 +26,18 @@ const schema = a.schema({
 
   /**
    * Team - Delivery team that works on initiatives
+   *
+   * capacityConfig: JSON object storing team capacity settings
+   * { streams: 2, streamPct: 45, bauPct: 10 }
+   * - streams: Number of parallel work streams
+   * - streamPct: Capacity percentage per stream
+   * - bauPct: BAU allocation percentage
    */
   Team: a
     .model({
       name: a.string().required(),
       isPrimaryConstraint: a.boolean().default(false),
+      capacityConfig: a.json(), // JSON of TeamCapacity
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
