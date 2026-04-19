@@ -9,6 +9,9 @@ import { usePortfolioStore } from '@/stores/portfolioStore';
 import { client } from '@/lib/amplifyClient';
 import type { Theme, Team, Initiative, FlowState, Effort } from '@/types';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SubscriptionData = any;
+
 function App() {
   const loadPortfolio = usePortfolioStore((s) => s.loadPortfolio);
   const isLoading = usePortfolioStore((s) => s.isLoading);
@@ -29,7 +32,7 @@ function App() {
 
     // Initiative subscriptions
     const initCreateSub = client.models.Initiative.onCreate().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           let teamStates: Record<string, FlowState> = {};
           if (data.teamStates) {
@@ -84,7 +87,7 @@ function App() {
     subscriptions.push(initCreateSub);
 
     const initUpdateSub = client.models.Initiative.onUpdate().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           let teamStates: Record<string, FlowState> = {};
           if (data.teamStates) {
@@ -139,7 +142,7 @@ function App() {
     subscriptions.push(initUpdateSub);
 
     const initDeleteSub = client.models.Initiative.onDelete().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           _applyInitiativeDelete(data.id);
         }
@@ -149,7 +152,7 @@ function App() {
 
     // Team subscriptions
     const teamCreateSub = client.models.Team.onCreate().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           const team: Team = {
             id: data.id,
@@ -163,7 +166,7 @@ function App() {
     subscriptions.push(teamCreateSub);
 
     const teamUpdateSub = client.models.Team.onUpdate().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           const team: Team = {
             id: data.id,
@@ -177,7 +180,7 @@ function App() {
     subscriptions.push(teamUpdateSub);
 
     const teamDeleteSub = client.models.Team.onDelete().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           _applyTeamDelete(data.id);
         }
@@ -187,7 +190,7 @@ function App() {
 
     // Theme subscriptions
     const themeCreateSub = client.models.Theme.onCreate().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           const theme: Theme = {
             id: data.id,
@@ -200,7 +203,7 @@ function App() {
     subscriptions.push(themeCreateSub);
 
     const themeUpdateSub = client.models.Theme.onUpdate().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           const theme: Theme = {
             id: data.id,
@@ -213,7 +216,7 @@ function App() {
     subscriptions.push(themeUpdateSub);
 
     const themeDeleteSub = client.models.Theme.onDelete().subscribe({
-      next: (data) => {
+      next: (data: SubscriptionData) => {
         if (data) {
           _applyThemeDelete(data.id);
         }

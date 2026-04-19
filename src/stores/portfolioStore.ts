@@ -120,12 +120,12 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         client.models.Initiative.list(),
       ]);
 
-      const themes: Theme[] = (themesResult.data ?? []).map((t) => ({
+      const themes: Theme[] = (themesResult.data ?? []).map((t: { id: string; name: string }) => ({
         id: t.id,
         name: t.name,
       }));
 
-      const teams: Team[] = (teamsResult.data ?? []).map((t) => ({
+      const teams: Team[] = (teamsResult.data ?? []).map((t: { id: string; name: string; isPrimaryConstraint?: boolean | null }) => ({
         id: t.id,
         name: t.name,
         isPrimaryConstraint: t.isPrimaryConstraint ?? false,
@@ -134,7 +134,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       // Sort initiatives by explicit order field
       const initiatives: Initiative[] = (initiativesResult.data ?? [])
         .map(toLocalInitiative)
-        .sort((a, b) => a.order - b.order);
+        .sort((a: Initiative, b: Initiative) => a.order - b.order);
 
       set({ themes, teams, initiatives, isLoading: false });
     } catch (err) {

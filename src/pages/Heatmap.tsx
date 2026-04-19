@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { format, parse } from 'date-fns';
+import { enGB } from 'date-fns/locale';
 import {
   Layers,
   TrendingDown,
@@ -14,7 +16,7 @@ import {
   X,
   ChevronsDownUp,
   ChevronsUpDown,
-  Calendar,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import {
   Select,
@@ -24,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { KpiCard } from '@/components/KpiCard';
 import { StateBadge, STATE_LEGEND_ITEMS } from '@/components/StateBadge';
 import { StatePicker } from '@/components/StatePicker';
@@ -38,6 +41,34 @@ import {
 } from '@/lib/metrics';
 import { cn } from '@/lib/utils';
 import type { Initiative, Effort, FlowState } from '@/types';
+
+// Helper to parse date string like "15th May" or "LIVE 29th June" to Date
+function parseDateString(dateStr: string): Date | undefined {
+  if (!dateStr) return undefined;
+  // Remove "LIVE " prefix if present
+  const cleaned = dateStr.replace(/^LIVE\s+/i, '').trim();
+  // Try parsing "29th June" format
+  const match = cleaned.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(\w+)/i);
+  if (match && match[1] && match[2]) {
+    const day = parseInt(match[1], 10);
+    const monthStr = match[2];
+    const year = new Date().getFullYear();
+    const parsed = parse(`${day} ${monthStr} ${year}`, 'd MMMM yyyy', new Date(), { locale: enGB });
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+}
+
+// Format Date to display string like "29th June"
+function formatDateString(date: Date, isLiveDate: boolean): string {
+  const day = date.getDate();
+  const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+    : day === 2 || day === 22 ? 'nd'
+    : day === 3 || day === 23 ? 'rd' : 'th';
+  const monthName = format(date, 'MMMM', { locale: enGB });
+  const formatted = `${day}${suffix} ${monthName}`;
+  return isLiveDate ? `LIVE ${formatted}` : formatted;
+}
 
 // Inline input component for adding items
 function InlineInput({
@@ -127,7 +158,6 @@ export function Heatmap() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
-  const [editDateValue, setEditDateValue] = useState('');
 
   // Filter initiatives by theme
   const filteredInitiatives =
@@ -502,11 +532,7 @@ export function Heatmap() {
                           onOpenChange={(open) => {
                             if (open) {
                               setEditingDateId(parentInit.id);
-                              setEditDateValue(parentInit.liveDate ?? '');
                             } else {
-                              if (editDateValue !== (parentInit.liveDate ?? '')) {
-                                updateLiveDate(parentInit.id, editDateValue);
-                              }
                               setEditingDateId(null);
                             }
                           }}
@@ -519,29 +545,23 @@ export function Heatmap() {
                                 </span>
                               ) : (
                                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
-                                  <Calendar className="h-2.5 w-2.5" />
+                                  <CalendarIcon className="h-2.5 w-2.5" />
                                   Add
                                 </span>
                               )}
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-48 p-2" align="start">
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                              Live Date
-                            </p>
-                            <input
-                              autoFocus
-                              value={editDateValue}
-                              onChange={(e) => setEditDateValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  updateLiveDate(parentInit.id, editDateValue);
-                                  setEditingDateId(null);
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={parseDateString(parentInit.liveDate ?? '')}
+                              onSelect={(date) => {
+                                if (date) {
+                                  updateLiveDate(parentInit.id, formatDateString(date, true));
                                 }
-                                if (e.key === 'Escape') setEditingDateId(null);
+                                setEditingDateId(null);
                               }}
-                              placeholder="e.g., LIVE 29th June"
-                              className="w-full text-sm border border-border rounded px-2 py-1 bg-background outline-none focus:border-primary"
+                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
@@ -651,11 +671,7 @@ export function Heatmap() {
                               onOpenChange={(open) => {
                                 if (open) {
                                   setEditingDateId(child.id);
-                                  setEditDateValue(child.dueDate ?? '');
                                 } else {
-                                  if (editDateValue !== (child.dueDate ?? '')) {
-                                    updateDueDate(child.id, editDateValue);
-                                  }
                                   setEditingDateId(null);
                                 }
                               }}
@@ -668,29 +684,23 @@ export function Heatmap() {
                                     </span>
                                   ) : (
                                     <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
-                                      <Calendar className="h-2.5 w-2.5" />
+                                      <CalendarIcon className="h-2.5 w-2.5" />
                                       Add
                                     </span>
                                   )}
                                 </button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-48 p-2" align="start">
-                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                                  Due Date
-                                </p>
-                                <input
-                                  autoFocus
-                                  value={editDateValue}
-                                  onChange={(e) => setEditDateValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      updateDueDate(child.id, editDateValue);
-                                      setEditingDateId(null);
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={parseDateString(child.dueDate ?? '')}
+                                  onSelect={(date) => {
+                                    if (date) {
+                                      updateDueDate(child.id, formatDateString(date, false));
                                     }
-                                    if (e.key === 'Escape') setEditingDateId(null);
+                                    setEditingDateId(null);
                                   }}
-                                  placeholder="e.g., 15th May"
-                                  className="w-full text-sm border border-border rounded px-2 py-1 bg-background outline-none focus:border-primary"
+                                  initialFocus
                                 />
                               </PopoverContent>
                             </Popover>
