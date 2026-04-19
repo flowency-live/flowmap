@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import type { FlowState } from '@/types';
 import { STATE_CONFIG, FLOW_STATES } from '@/types';
+import { useThemeStore } from '@/stores/themeStore';
 
 interface StateBadgeProps {
   state: FlowState;
@@ -20,16 +21,32 @@ export function StateBadge({
   size = 'md',
   className,
 }: StateBadgeProps) {
+  const theme = useThemeStore((s) => s.theme);
+  const isDark = theme === 'dark';
   const config = STATE_CONFIG[state];
   const isNA = state === 'N/A';
-  const isEmphasis = state === 'Constrained' || state === 'Blocked';
+  const isEmphasis = config.isEmphasis;
+
+  // Use dark mode colors when in dark theme
+  const bgColor = isDark ? config.bgColorDark : config.bgColor;
+  const textColor = isDark ? config.textColorDark : config.textColor;
+
+  // Glow colors for emphasis states in dark mode
+  const glowStyle = isDark && isEmphasis
+    ? {
+        boxShadow: state === 'Blocked'
+          ? '0 0 12px rgba(239, 68, 68, 0.5)'
+          : '0 0 12px rgba(139, 92, 246, 0.5)',
+      }
+    : {};
 
   return (
     <div
       title={config.label}
       style={{
-        backgroundColor: config.bgColor,
-        color: config.textColor,
+        backgroundColor: bgColor,
+        color: textColor,
+        ...glowStyle,
       }}
       className={cn(
         // Base styles
@@ -39,10 +56,10 @@ export function StateBadge({
         // Shadow and border for depth
         'shadow-sm',
         isEmphasis
-          ? 'ring-1 ring-inset ring-current/40 shadow-md'
-          : 'border border-black/10',
-        // Typography - bold for visibility
-        isNA ? 'font-medium' : 'font-bold',
+          ? 'ring-1 ring-inset ring-white/20 shadow-md font-extrabold'
+          : isNA
+            ? 'border border-black/5'
+            : 'border border-black/10 font-bold',
         // Size
         SIZE_CLASSES[size],
         // Hover effect

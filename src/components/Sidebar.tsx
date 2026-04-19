@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, AlertTriangle, Zap, Settings, Info } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Zap, Settings, Info, Sun, Moon } from 'lucide-react';
+import { useThemeStore } from '@/stores/themeStore';
 import {
   Sheet,
   SheetContent,
@@ -142,6 +143,7 @@ function TechStackContent() {
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { theme, toggleTheme } = useThemeStore();
 
   return (
     <div className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border h-screen flex flex-col fixed left-0 top-0">
@@ -181,27 +183,40 @@ export function Sidebar() {
         <span className="text-xs text-sidebar-foreground/40">
           Portfolio Flow Intelligence
         </span>
-        <Sheet>
-          <SheetTrigger asChild>
-            <button
-              className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-              title="Tech Stack Info"
-            >
-              <Info className="h-4 w-4" />
-            </button>
-          </SheetTrigger>
-          <SheetContent className="overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>FlowMap Tech Stack</SheetTitle>
-              <SheetDescription>
-                Full-stack serverless architecture on AWS
-              </SheetDescription>
-            </SheetHeader>
-            <div className="mt-6">
-              <TechStackContent />
-            </div>
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                title="Tech Stack Info"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent className="overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>FlowMap Tech Stack</SheetTitle>
+                <SheetDescription>
+                  Full-stack serverless architecture on AWS
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6">
+                <TechStackContent />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </div>
   );

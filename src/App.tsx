@@ -9,6 +9,7 @@ import { Simulator } from '@/pages/Simulator';
 import { TeamKanban } from '@/pages/TeamKanban';
 import { Config } from '@/pages/Config';
 import { usePortfolioStore } from '@/stores/portfolioStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { client } from '@/lib/amplifyClient';
 import type { Theme, Team, Initiative, FlowState, Effort } from '@/types';
 
@@ -25,6 +26,19 @@ function App() {
   const _applyTeamDelete = usePortfolioStore((s) => s._applyTeamDelete);
   const _applyThemeUpdate = usePortfolioStore((s) => s._applyThemeUpdate);
   const _applyThemeDelete = usePortfolioStore((s) => s._applyThemeDelete);
+
+  // Theme management
+  const theme = useThemeStore((s) => s.theme);
+
+  // Apply theme class to document root
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
 
   // Load data and set up subscriptions on mount
   useEffect(() => {

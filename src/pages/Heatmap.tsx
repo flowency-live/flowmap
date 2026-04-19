@@ -354,10 +354,10 @@ export function Heatmap() {
               </colgroup>
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="px-4 py-2.5 font-semibold">Initiative</th>
-                  <th className="px-2 py-2.5 font-semibold">Date</th>
+                  <th className="px-4 py-2 font-semibold">Initiative</th>
+                  <th className="px-2 py-2 font-semibold">Date</th>
                   {teams.map((team) => (
-                    <th key={team.id} className="px-1 py-2.5 font-semibold text-center group">
+                    <th key={team.id} className="px-1 py-2 font-semibold text-center group">
                       <div className="flex items-center justify-center gap-0.5 relative">
                         <Link
                           href={`/team/${team.id}`}
@@ -387,7 +387,7 @@ export function Heatmap() {
                     </th>
                   ))}
                   {/* Add Team Column */}
-                  <th className="px-1 py-2.5 text-center">
+                  <th className="px-1 py-2 text-center">
                     <Popover open={addTeamOpen} onOpenChange={setAddTeamOpen}>
                       <PopoverTrigger asChild>
                         <button className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-primary transition-colors text-[10px] font-medium px-1 py-0.5 rounded border border-dashed border-border hover:border-primary">

@@ -82,71 +82,93 @@ export interface PortfolioState {
 
 /**
  * State configuration for UI rendering
- * Colors match the Excel roadmap specification
+ * High-saturation colors for instant pattern recognition
+ * This is a system heatmap: colour = meaning, density = speed, contrast = decision-making
  */
 export interface StateConfig {
   label: string;
   short: string;
-  bgColor: string; // Hex background color
-  textColor: string; // Hex text color
+  bgColor: string; // Hex background color (light mode)
+  textColor: string; // Hex text color (light mode)
+  bgColorDark: string; // Hex background color (dark mode)
+  textColorDark: string; // Hex text color (dark mode)
+  isEmphasis?: boolean; // Constrained + Blocked should visually "pop"
 }
 
 export const STATE_CONFIG: Record<FlowState, StateConfig> = {
-  // N/A: Subtle gray - this is noise, kill it visually
+  // N/A: Faded - this is noise, kill it visually
   'N/A': {
     label: 'Not Applicable',
     short: 'N/A',
-    bgColor: '#F0F0F0',
-    textColor: '#909090',
+    bgColor: '#F3F4F6',
+    textColor: '#9CA3AF',
+    bgColorDark: '#1F2937',
+    textColorDark: '#6B7280',
   },
-  // Not Started: Bold amber - waiting, needs attention
+  // Not Started: Orange - waiting, needs attention
   'N/S': {
     label: 'Not Started',
     short: 'N/S',
-    bgColor: '#FFEDD5',
-    textColor: '#C2410C',
+    bgColor: '#FB923C',
+    textColor: '#1F2937',
+    bgColorDark: '#FB923C',
+    textColorDark: '#0B0F19',
   },
-  // Discovery: Bold yellow - early stage exploration
+  // Discovery: Amber - early stage exploration
   Discovery: {
     label: 'Discovery',
     short: 'Disc',
-    bgColor: '#FEF3C7',
-    textColor: '#B45309',
+    bgColor: '#F59E0B',
+    textColor: '#1F2937',
+    bgColorDark: '#FBBF24',
+    textColorDark: '#0B0F19',
   },
-  // Ready: Lime/chartreuse - GO signal, can start but hasn't
+  // Ready: Vibrant lime - GO signal
   Ready: {
     label: 'Ready',
     short: 'Ready',
-    bgColor: '#ECFCCB',
-    textColor: '#4D7C0F',
+    bgColor: '#84CC16',
+    textColor: '#1F2937',
+    bgColorDark: '#A3E635',
+    textColorDark: '#0B0F19',
   },
-  // Constrained: Bold purple - bottleneck, must POP
+  // Constrained: Strong purple - bottleneck, must POP
   Constrained: {
     label: 'Constrained',
     short: 'Const',
-    bgColor: '#E9D5FF',
-    textColor: '#7C3AED',
+    bgColor: '#7C3AED',
+    textColor: '#FFFFFF',
+    bgColorDark: '#8B5CF6',
+    textColorDark: '#FFFFFF',
+    isEmphasis: true,
   },
-  // Doing: Bold blue - actively in progress
+  // Doing: Deep blue - actively in progress
   Doing: {
     label: 'Doing',
     short: 'Doing',
-    bgColor: '#DBEAFE',
-    textColor: '#1D4ED8',
+    bgColor: '#2563EB',
+    textColor: '#FFFFFF',
+    bgColorDark: '#3B82F6',
+    textColorDark: '#FFFFFF',
   },
-  // Done: Rich green - complete, success
+  // Done: Strong green - complete, success
   Done: {
     label: 'Done',
     short: 'Done',
-    bgColor: '#BBF7D0',
-    textColor: '#15803D',
+    bgColor: '#16A34A',
+    textColor: '#FFFFFF',
+    bgColorDark: '#22C55E',
+    textColorDark: '#FFFFFF',
   },
-  // Blocked: Bold red - problem, must POP
+  // Blocked: Strong red - problem, must POP
   Blocked: {
     label: 'Blocked',
     short: 'Block',
-    bgColor: '#FECACA',
-    textColor: '#B91C1C',
+    bgColor: '#DC2626',
+    textColor: '#FFFFFF',
+    bgColorDark: '#EF4444',
+    textColorDark: '#FFFFFF',
+    isEmphasis: true,
   },
 };
 
