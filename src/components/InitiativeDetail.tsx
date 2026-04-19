@@ -1,13 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Pencil, X, Calendar } from 'lucide-react';
+import { X, Calendar as CalendarIcon } from 'lucide-react';
+import { format, parse } from 'date-fns';
+import { enGB } from 'date-fns/locale';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { StateBadge } from '@/components/StateBadge';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import type { Initiative } from '@/types';
-import { cn } from '@/lib/utils';
 
 interface InitiativeDetailProps {
   initiative: Initiative | null;
   onClose: () => void;
+}
+
+// Helper to parse date string like "15th May" or "LIVE 29th June" to Date
+function parseDateString(dateStr: string): Date | undefined {
+  if (!dateStr) return undefined;
+  const cleaned = dateStr.replace(/^LIVE\s+/i, '').trim();
+  const match = cleaned.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(\w+)/i);
+  if (match && match[1] && match[2]) {
+    const day = parseInt(match[1], 10);
+    const monthStr = match[2];
+    const year = new Date().getFullYear();
+    const parsed = parse(`${day} ${monthStr} ${year}`, 'd MMMM yyyy', new Date(), { locale: enGB });
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+}
+
+// Format Date to display string like "29th June"
+function formatDateString(date: Date, isLiveDate: boolean): string {
+  const day = date.getDate();
+  const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+    : day === 2 || day === 22 ? 'nd'
+    : day === 3 || day === 23 ? 'rd' : 'th';
+  const monthName = format(date, 'MMMM', { locale: enGB });
+  const formatted = `${day}${suffix} ${monthName}`;
+  return isLiveDate ? `LIVE ${formatted}` : formatted;
 }
 
 export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps) {
@@ -21,17 +50,12 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
 
   const [notes, setNotes] = useState('');
   const [seqNotes, setSeqNotes] = useState('');
-  const [liveDate, setLiveDate] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [editNoteValue, setEditNoteValue] = useState('');
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   useEffect(() => {
     if (initiative) {
       setNotes(initiative.notes);
       setSeqNotes(initiative.sequencingNotes);
-      setLiveDate(initiative.liveDate ?? '');
-      setDueDate(initiative.dueDate ?? '');
     }
   }, [initiative]);
 
@@ -47,26 +71,15 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
     }
   };
 
-  const handleSaveLiveDate = () => {
-    if (initiative) {
-      updateLiveDate(initiative.id, liveDate);
-    }
-  };
-
-  const handleSaveDueDate = () => {
-    if (initiative) {
-      updateDueDate(initiative.id, dueDate);
-    }
-  };
-
   // Check if this is a parent (has children) - we show liveDate for parents, dueDate for children
   const isParent = initiative?.parentId === null;
+  const currentDate = isParent ? initiative?.liveDate : initiative?.dueDate;
 
   if (!initiative) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground p-6">
         <div className="text-center">
-          <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">Select an initiative to view details</p>
         </div>
       </div>
@@ -98,14 +111,38 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
             {isParent ? 'Live Date' : 'Due Date'}
           </label>
-          <input
-            type="text"
-            value={isParent ? liveDate : dueDate}
-            onChange={(e) => isParent ? setLiveDate(e.target.value) : setDueDate(e.target.value)}
-            onBlur={isParent ? handleSaveLiveDate : handleSaveDueDate}
-            placeholder={isParent ? 'e.g., LIVE 29th June' : 'e.g., 15th May'}
-            className="w-full px-2.5 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <button className="w-full px-2.5 py-1.5 text-sm border border-input rounded-md bg-background text-left flex items-center gap-2 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                {currentDate ? (
+                  <span>{currentDate}</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {isParent ? 'Select live date...' : 'Select due date...'}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={parseDateString(currentDate ?? '')}
+                onSelect={(date) => {
+                  if (date) {
+                    const formatted = formatDateString(date, isParent);
+                    if (isParent) {
+                      updateLiveDate(initiative.id, formatted);
+                    } else {
+                      updateDueDate(initiative.id, formatted);
+                    }
+                  }
+                  setDatePickerOpen(false);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Team States */}
@@ -119,7 +156,6 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
               const effort = initiative.teamEfforts[team.id];
               const note = initiative.teamNotes[team.id];
               const hasNote = !!note && note.trim() !== '';
-              const isEditing = editingNote === team.id;
 
               return (
                 <div key={team.id} className="py-2 border-b border-border last:border-0">
@@ -135,28 +171,11 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
                     <StateBadge state={state} size="lg" />
                   </div>
                   {/* Team Note */}
-                  {isEditing ? (
-                    <div className="mt-2">
-                      <textarea
-                        autoFocus
-                        value={editNoteValue}
-                        onChange={(e) => setEditNoteValue(e.target.value)}
-                        onBlur={() => {
-                          // Save handled via StatePicker, just close here
-                          setEditingNote(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') setEditingNote(null);
-                        }}
-                        placeholder="Add note..."
-                        className="w-full h-14 px-2 py-1 text-xs border border-input rounded bg-muted resize-none focus:outline-none focus:ring-1 focus:ring-ring"
-                      />
-                    </div>
-                  ) : hasNote ? (
+                  {hasNote && (
                     <p className="mt-1.5 text-xs text-muted-foreground italic pl-0.5">
                       "{note}"
                     </p>
-                  ) : null}
+                  )}
                 </div>
               );
             })}
