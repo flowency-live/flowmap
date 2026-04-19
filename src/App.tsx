@@ -52,6 +52,17 @@ function App() {
               teamEfforts = {};
             }
           }
+          let teamNotes: Record<string, string> = {};
+          if ((data as { teamNotes?: unknown }).teamNotes) {
+            try {
+              const notesData = (data as { teamNotes?: unknown }).teamNotes;
+              teamNotes = typeof notesData === 'string'
+                ? JSON.parse(notesData)
+                : notesData as Record<string, string>;
+            } catch {
+              teamNotes = {};
+            }
+          }
           const initiative: Initiative = {
             id: data.id,
             name: data.name,
@@ -64,6 +75,7 @@ function App() {
             sequencingNotes: data.sequencingNotes ?? '',
             teamStates,
             teamEfforts,
+            teamNotes,
           };
           _applyInitiativeUpdate(initiative);
         }
@@ -95,6 +107,17 @@ function App() {
               teamEfforts = {};
             }
           }
+          let teamNotes: Record<string, string> = {};
+          if ((data as { teamNotes?: unknown }).teamNotes) {
+            try {
+              const notesData = (data as { teamNotes?: unknown }).teamNotes;
+              teamNotes = typeof notesData === 'string'
+                ? JSON.parse(notesData)
+                : notesData as Record<string, string>;
+            } catch {
+              teamNotes = {};
+            }
+          }
           const initiative: Initiative = {
             id: data.id,
             name: data.name,
@@ -107,6 +130,7 @@ function App() {
             sequencingNotes: data.sequencingNotes ?? '',
             teamStates,
             teamEfforts,
+            teamNotes,
           };
           _applyInitiativeUpdate(initiative);
         }
@@ -242,7 +266,7 @@ function App() {
     <TooltipProvider>
       <div className="flex min-h-screen bg-background">
         <Sidebar />
-        <main className="ml-64 flex-1">
+        <main className="ml-64 flex-1 h-screen overflow-hidden">
           <Router>
             <Switch>
               <Route path="/" component={Heatmap} />

@@ -13,6 +13,9 @@ interface PortfolioStore extends PortfolioState {
   // Initiative actions
   updateTeamState: (initiativeId: string, teamId: string, state: FlowState) => Promise<void>;
   updateTeamEffort: (initiativeId: string, teamId: string, effort: Effort | null) => Promise<void>;
+  updateTeamNotes: (initiativeId: string, teamId: string, notes: string) => Promise<void>;
+  updateLiveDate: (initiativeId: string, liveDate: string) => Promise<void>;
+  updateDueDate: (initiativeId: string, dueDate: string) => Promise<void>;
   addInitiative: (themeId: string, name: string, parentId?: string | null) => Promise<void>;
   removeInitiative: (id: string) => Promise<void>;
   renameInitiative: (id: string, name: string) => Promise<void>;
@@ -51,6 +54,7 @@ function toLocalInitiative(amplifyInit: {
   sequencingNotes?: string | null;
   teamStates?: unknown;
   teamEfforts?: unknown;
+  teamNotes?: unknown;
 }): Initiative {
   let teamStates: Record<string, FlowState> = {};
   if (amplifyInit.teamStates) {
@@ -72,6 +76,16 @@ function toLocalInitiative(amplifyInit: {
       teamEfforts = {};
     }
   }
+  let teamNotes: Record<string, string> = {};
+  if (amplifyInit.teamNotes) {
+    try {
+      teamNotes = typeof amplifyInit.teamNotes === 'string'
+        ? JSON.parse(amplifyInit.teamNotes)
+        : amplifyInit.teamNotes as Record<string, string>;
+    } catch {
+      teamNotes = {};
+    }
+  }
   return {
     id: amplifyInit.id,
     name: amplifyInit.name,
@@ -84,6 +98,7 @@ function toLocalInitiative(amplifyInit: {
     sequencingNotes: amplifyInit.sequencingNotes ?? '',
     teamStates,
     teamEfforts,
+    teamNotes,
   };
 }
 
@@ -182,6 +197,79 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     // Note: teamEfforts not yet persisted to AppSync - schema update needed
     // For now, efforts are kept in local state only
     console.log('Effort updated locally:', initiativeId, teamId, effort);
+  },
+
+  updateTeamNotes: async (initiativeId, teamId, notes) => {
+    const initiative = get().initiatives.find((i) => i.id === initiativeId);
+    if (!initiative) return;
+
+    let newTeamNotes: Record<string, string>;
+    if (notes === '') {
+      // Remove notes for this team
+      const { [teamId]: _, ...rest } = initiative.teamNotes;
+      newTeamNotes = rest;
+    } else {
+      newTeamNotes = { ...initiative.teamNotes, [teamId]: notes };
+    }
+
+    // Optimistic update
+    set((s) => ({
+      initiatives: s.initiatives.map((init) =>
+        init.id === initiativeId ? { ...init, teamNotes: newTeamNotes } : init
+      ),
+    }));
+
+    // Persist to AppSync
+    try {
+      await client.models.Initiative.update({
+        id: initiativeId,
+        teamNotes: JSON.stringify(newTeamNotes),
+      });
+    } catch (err) {
+      console.error('Failed to update team notes:', err);
+      // Revert on error
+      set((s) => ({
+        initiatives: s.initiatives.map((init) =>
+          init.id === initiativeId ? { ...init, teamNotes: initiative.teamNotes } : init
+        ),
+      }));
+    }
+  },
+
+  updateLiveDate: async (initiativeId, liveDate) => {
+    const initiative = get().initiatives.find((i) => i.id === initiativeId);
+    if (!initiative) return;
+
+    // Optimistic update
+    set((s) => ({
+      initiatives: s.initiatives.map((init) =>
+        init.id === initiativeId ? { ...init, liveDate: liveDate || undefined } : init
+      ),
+    }));
+
+    try {
+      await client.models.Initiative.update({ id: initiativeId, liveDate });
+    } catch (err) {
+      console.error('Failed to update live date:', err);
+    }
+  },
+
+  updateDueDate: async (initiativeId, dueDate) => {
+    const initiative = get().initiatives.find((i) => i.id === initiativeId);
+    if (!initiative) return;
+
+    // Optimistic update
+    set((s) => ({
+      initiatives: s.initiatives.map((init) =>
+        init.id === initiativeId ? { ...init, dueDate: dueDate || undefined } : init
+      ),
+    }));
+
+    try {
+      await client.models.Initiative.update({ id: initiativeId, dueDate });
+    } catch (err) {
+      console.error('Failed to update due date:', err);
+    }
   },
 
   addInitiative: async (themeId, name, parentId = null) => {
@@ -348,19 +436,21 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       initiatives: s.initiatives.map((init) => {
         const { [id]: _state, ...remainingStates } = init.teamStates;
         const { [id]: _effort, ...remainingEfforts } = init.teamEfforts;
-        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts };
+        const { [id]: _notes, ...remainingNotes } = init.teamNotes;
+        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts, teamNotes: remainingNotes };
       }),
     }));
 
     try {
       await client.models.Team.delete({ id });
-      // Update all initiatives to remove team state
+      // Update all initiatives to remove team state and notes
       const initiatives = get().initiatives;
       await Promise.all(
         initiatives.map((init) =>
           client.models.Initiative.update({
             id: init.id,
             teamStates: JSON.stringify(init.teamStates),
+            teamNotes: JSON.stringify(init.teamNotes),
           })
         )
       );
@@ -457,9 +547,13 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         const teamEfforts = Object.keys(initiative.teamEfforts).length > 0
           ? initiative.teamEfforts
           : existing.teamEfforts;
+        // Preserve local teamNotes if incoming has empty notes
+        const teamNotes = Object.keys(initiative.teamNotes).length > 0
+          ? initiative.teamNotes
+          : existing.teamNotes;
         return {
           initiatives: s.initiatives.map((i) =>
-            i.id === initiative.id ? { ...initiative, teamEfforts } : i
+            i.id === initiative.id ? { ...initiative, teamEfforts, teamNotes } : i
           ),
         };
       }
@@ -489,7 +583,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       initiatives: s.initiatives.map((init) => {
         const { [id]: _state, ...remainingStates } = init.teamStates;
         const { [id]: _effort, ...remainingEfforts } = init.teamEfforts;
-        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts };
+        const { [id]: _notes, ...remainingNotes } = init.teamNotes;
+        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts, teamNotes: remainingNotes };
       }),
     }));
   },

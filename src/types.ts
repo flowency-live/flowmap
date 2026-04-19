@@ -69,6 +69,7 @@ export interface Initiative {
   sequencingNotes: string;
   teamStates: Record<string, FlowState>; // teamId -> state
   teamEfforts: Record<string, Effort>; // teamId -> effort
+  teamNotes: Record<string, string>; // teamId -> notes
 }
 
 export interface PortfolioState {
