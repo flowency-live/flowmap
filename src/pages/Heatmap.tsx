@@ -537,12 +537,12 @@ export function Heatmap() {
                           <PopoverTrigger asChild>
                             <button className="w-full text-left flex items-center gap-1 hover:bg-muted/50 rounded px-1 -mx-1 py-0.5">
                               {parentInit.liveDate ? (
-                                <span className="text-[10px] font-medium text-primary truncate">
+                                <span className="text-xs font-medium text-primary truncate">
                                   {parentInit.liveDate}
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
-                                  <CalendarIcon className="h-2.5 w-2.5" />
+                                <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                                  <CalendarIcon className="h-3 w-3" />
                                   Add
                                 </span>
                               )}
@@ -673,12 +673,12 @@ export function Heatmap() {
                               <PopoverTrigger asChild>
                                 <button className="w-full text-left flex items-center gap-1 hover:bg-muted/50 rounded px-1 -mx-1 py-0.5">
                                   {child.dueDate ? (
-                                    <span className="text-[10px] text-muted-foreground truncate">
+                                    <span className="text-xs text-muted-foreground truncate">
                                       {child.dueDate}
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
-                                      <CalendarIcon className="h-2.5 w-2.5" />
+                                    <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                                      <CalendarIcon className="h-3 w-3" />
                                       Add
                                     </span>
                                   )}
