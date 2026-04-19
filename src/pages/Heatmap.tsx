@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import { format, parse } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -348,17 +349,18 @@ export function Heatmap() {
                   {teams.map((team) => (
                     <th key={team.id} className="px-1 py-2.5 font-semibold text-center group">
                       <div className="flex items-center justify-center gap-0.5 relative">
-                        <span
+                        <Link
+                          href={`/team/${team.id}`}
                           className={cn(
-                            'text-sm font-semibold normal-case',
-                            team.isPrimaryConstraint && 'text-destructive'
+                            'text-sm font-semibold normal-case hover:underline transition-colors',
+                            team.isPrimaryConstraint ? 'text-destructive hover:text-destructive/80' : 'hover:text-primary'
                           )}
                         >
                           {team.name}
                           {team.isPrimaryConstraint && (
                             <AlertTriangle className="inline h-3 w-3 ml-0.5" />
                           )}
-                        </span>
+                        </Link>
                         {teams.length > 1 && (
                           <ConfirmDelete
                             trigger={

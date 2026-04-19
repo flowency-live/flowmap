@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { Heatmap } from '@/pages/Heatmap';
 import { ConstraintLens } from '@/pages/ConstraintLens';
 import { Simulator } from '@/pages/Simulator';
+import { TeamKanban } from '@/pages/TeamKanban';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { client } from '@/lib/amplifyClient';
 import type { Theme, Team, Initiative, FlowState, Effort } from '@/types';
@@ -275,6 +276,7 @@ function App() {
               <Route path="/" component={Heatmap} />
               <Route path="/constraint" component={ConstraintLens} />
               <Route path="/simulator" component={Simulator} />
+              <Route path="/team/:teamId" component={TeamKanban} />
               <Route>
                 <div className="p-8">
                   <h1 className="text-2xl font-bold">Page Not Found</h1>

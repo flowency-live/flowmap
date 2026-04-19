@@ -16,6 +16,7 @@ interface StatePickerProps {
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  children?: React.ReactNode;
 }
 
 export function StatePicker({
@@ -26,8 +27,9 @@ export function StatePicker({
   onEffortChange,
   onNoteChange,
   disabled = false,
-  size = 'sm',
+  size = 'md',
   className,
+  children,
 }: StatePickerProps) {
   const [open, setOpen] = useState(false);
   const [showEffort, setShowEffort] = useState(false);
@@ -79,25 +81,34 @@ export function StatePicker({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild disabled={disabled}>
-        <button
-          className={cn(
-            'inline-flex flex-col items-center justify-center gap-0.5 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded disabled:opacity-50 disabled:pointer-events-none',
-            className
-          )}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="relative">
-            <StateBadge state={value} size={size} />
-            {hasNote && (
-              <MessageSquare className="absolute -top-0.5 -right-0.5 h-2 w-2 text-primary fill-primary" />
-            )}
+        {children ? (
+          <div
+            className={cn('cursor-pointer', className)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {children}
           </div>
-          {effort && (
-            <span className="text-[9px] font-medium text-muted-foreground leading-none">
-              {effort}
-            </span>
-          )}
-        </button>
+        ) : (
+          <button
+            className={cn(
+              'inline-flex flex-col items-center justify-center gap-0.5 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded disabled:opacity-50 disabled:pointer-events-none',
+              className
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <StateBadge state={value} size={size} />
+              {hasNote && (
+                <MessageSquare className="absolute -top-0.5 -right-0.5 h-2 w-2 text-primary fill-primary" />
+              )}
+            </div>
+            {effort && (
+              <span className="text-[9px] font-medium text-muted-foreground leading-none">
+                {effort}
+              </span>
+            )}
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         className="w-auto p-2"

@@ -90,61 +90,61 @@ export interface StateConfig {
 }
 
 export const STATE_CONFIG: Record<FlowState, StateConfig> = {
-  // N/A: Nearly invisible - this is noise, kill it visually
+  // N/A: Very subtle - this is noise, kill it visually
   'N/A': {
     label: 'Not Applicable',
     short: 'N/A',
-    bgColor: '#F5F5F5',
-    textColor: '#BDBDBD',
+    bgColor: '#F8F8F8',
+    textColor: '#A0A0A0',
   },
   // Not Started: Soft amber - waiting, needs attention
   'N/S': {
     label: 'Not Started',
     short: 'N/S',
-    bgColor: '#FFE0B2',
-    textColor: '#E65100',
+    bgColor: '#FEF3E2',
+    textColor: '#B45309',
   },
-  // Discovery: Light yellow - early stage exploration
+  // Discovery: Soft yellow - early stage exploration
   Discovery: {
     label: 'Discovery',
     short: 'Disc',
-    bgColor: '#FFF9C4',
-    textColor: '#F57F17',
+    bgColor: '#FEF9E7',
+    textColor: '#CA8A04',
   },
-  // Ready: Lime green - go signal, ready to start
+  // Ready: Soft green - go signal, ready to start
   Ready: {
     label: 'Ready',
     short: 'Ready',
-    bgColor: '#DCEDC8',
-    textColor: '#33691E',
+    bgColor: '#ECFDF5',
+    textColor: '#059669',
   },
-  // Constrained: INTENSE purple - bottleneck, must POP
+  // Constrained: Soft purple - bottleneck, must POP
   Constrained: {
     label: 'Constrained',
     short: 'Const',
-    bgColor: '#CE93D8',
-    textColor: '#4A148C',
+    bgColor: '#F3E8FF',
+    textColor: '#7C3AED',
   },
-  // Doing: Strong blue - actively in progress
+  // Doing: Soft blue - actively in progress
   Doing: {
     label: 'Doing',
     short: 'Doing',
-    bgColor: '#90CAF9',
-    textColor: '#0D47A1',
+    bgColor: '#EFF6FF',
+    textColor: '#2563EB',
   },
-  // Done: Rich green - success, complete
+  // Done: Green - success, complete
   Done: {
     label: 'Done',
     short: 'Done',
-    bgColor: '#A5D6A7',
-    textColor: '#1B5E20',
+    bgColor: '#DCFCE7',
+    textColor: '#16A34A',
   },
-  // Blocked: INTENSE red - problem, must POP
+  // Blocked: Soft red - problem, must POP
   Blocked: {
     label: 'Blocked',
     short: 'Block',
-    bgColor: '#EF9A9A',
-    textColor: '#B71C1C',
+    bgColor: '#FEE2E2',
+    textColor: '#DC2626',
   },
 };
 
