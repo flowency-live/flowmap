@@ -155,6 +155,7 @@ export function Heatmap() {
   const [selectedInit, setSelectedInit] = useState<Initiative | null>(null);
   const [collapsedInitiatives, setCollapsedInitiatives] = useState<Set<string>>(new Set());
   const [addingInitToTheme, setAddingInitToTheme] = useState<string | null>(null);
+  const [addingChildToParent, setAddingChildToParent] = useState<string | null>(null);
   const [addTeamOpen, setAddTeamOpen] = useState(false);
   const [addTeamValue, setAddTeamValue] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -524,7 +525,25 @@ export function Heatmap() {
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </button>
-                              <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAddingChildToParent(parentInit.id);
+                                  // Expand if collapsed so user sees the new input
+                                  if (collapsedInitiatives.has(parentInit.id)) {
+                                    setCollapsedInitiatives((prev) => {
+                                      const next = new Set(prev);
+                                      next.delete(parentInit.id);
+                                      return next;
+                                    });
+                                  }
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity shrink-0"
+                                title="Add child item"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                              <span onClick={(e) => e.stopPropagation()} className="shrink-0">
                                 <ConfirmDelete
                                   trigger={
                                     <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
@@ -748,6 +767,30 @@ export function Heatmap() {
                         </tr>
                       );
                     });
+                  }
+
+                  // Add child input row (when expanded or adding child to this parent)
+                  if (addingChildToParent === parentInit.id) {
+                    rows.push(
+                      <tr
+                        key={`add-child-${parentInit.id}`}
+                        className="border-b border-border/20 bg-muted/20"
+                      >
+                        <td className="px-2 py-1.5 pl-6 h-8" colSpan={teams.length + 3}>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground text-xs shrink-0">└</span>
+                            <InlineInput
+                              placeholder="Child item name..."
+                              onConfirm={(name) => {
+                                addInitiative(parentInit.themeId, name, parentInit.id);
+                                setAddingChildToParent(null);
+                              }}
+                              onCancel={() => setAddingChildToParent(null)}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
                   }
 
                   return rows;
