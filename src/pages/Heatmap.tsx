@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { format, parse } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
-  Layers,
-  TrendingDown,
-  Clock,
+  Activity,
+  OctagonX,
+  Hourglass,
   AlertTriangle,
   ChevronDown,
   ChevronRight,
@@ -35,9 +35,10 @@ import { InitiativeDetail } from '@/components/InitiativeDetail';
 import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import {
-  isZeroEngagement,
-  getReadyCount,
-  getConstraintLoadRatio,
+  getInProgressCount,
+  getBlockedCount,
+  getWaitingCount,
+  getBottleneckTeam,
   getRollupState,
 } from '@/lib/metrics';
 import { cn } from '@/lib/utils';
@@ -171,14 +172,11 @@ export function Heatmap() {
     (i) => !initiatives.some((child) => child.parentId === i.id)
   );
 
-  // KPI calculations
-  const totalCount = initiatives.filter((i) => i.parentId === null).length;
-  const zeroCount = leafInitiatives.filter(isZeroEngagement).length;
-  const readyCount = getReadyCount(leafInitiatives);
-  const constraintTeam = teams.find((t) => t.isPrimaryConstraint) ?? teams[0];
-  const constraintLoad = constraintTeam
-    ? getConstraintLoadRatio(constraintTeam.id, leafInitiatives)
-    : 0;
+  // KPI calculations - actionable metrics
+  const inProgressCount = getInProgressCount(leafInitiatives);
+  const blockedCount = getBlockedCount(leafInitiatives);
+  const waitingCount = getWaitingCount(leafInitiatives);
+  const bottleneck = getBottleneckTeam(teams, leafInitiatives);
 
   // Get parent initiatives (top level) - preserve original order from data
   const parentInitiatives = useMemo(() => {
@@ -283,20 +281,31 @@ export function Heatmap() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <KpiCard title="Total Initiatives" value={totalCount} icon={Layers} />
           <KpiCard
-            title="Zero Engagement"
-            value={zeroCount}
-            icon={TrendingDown}
-            variant="destructive"
+            title="In Progress"
+            value={inProgressCount}
+            icon={Activity}
+            variant={inProgressCount > 0 ? 'default' : 'warning'}
           />
-          <KpiCard title="Ready to Start" value={readyCount} icon={Clock} />
           <KpiCard
-            title="Constraint Load"
-            value={`${constraintLoad}%`}
+            title="Blocked"
+            value={blockedCount}
+            icon={OctagonX}
+            variant={blockedCount > 0 ? 'destructive' : 'default'}
+          />
+          <KpiCard
+            title="Waiting"
+            value={waitingCount}
+            icon={Hourglass}
+            variant={waitingCount > 3 ? 'warning' : 'default'}
+            subtitle="Ready or Constrained"
+          />
+          <KpiCard
+            title="Bottleneck"
+            value={bottleneck?.count ?? 0}
             icon={AlertTriangle}
-            variant="warning"
-            subtitle={constraintTeam?.name ?? 'No constraint'}
+            variant={bottleneck && bottleneck.count > 0 ? 'warning' : 'default'}
+            subtitle={bottleneck?.team.name ?? 'None identified'}
           />
         </div>
 
