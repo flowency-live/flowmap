@@ -305,11 +305,8 @@ export function Heatmap() {
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               Legend
             </span>
-            {STATE_LEGEND_ITEMS.map(({ state, label }) => (
-              <div key={state} className="flex items-center gap-1">
-                <StateBadge state={state} />
-                <span className="text-[10px] text-muted-foreground">{label}</span>
-              </div>
+            {STATE_LEGEND_ITEMS.map(({ state }) => (
+              <StateBadge key={state} state={state} />
             ))}
           </div>
           {parentsWithChildren.size > 0 && (

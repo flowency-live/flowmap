@@ -33,9 +33,9 @@ const STATE_ICONS: Record<FlowState, LucideIcon> = {
 };
 
 const SIZE_CLASSES = {
-  sm: 'h-5 min-w-[40px] px-1.5 text-[10px]',
-  md: 'h-6 min-w-[56px] px-2 text-xs',
-  lg: 'h-7 min-w-[72px] px-3 text-sm',
+  sm: 'h-5 px-1.5 text-[10px]',
+  md: 'h-6 px-2 text-[11px]',
+  lg: 'h-7 px-2.5 text-xs',
 };
 
 export function StateBadge({
@@ -66,10 +66,8 @@ export function StateBadge({
           <Icon className="w-3.5 h-3.5 shrink-0" />
           {showLabel && config.label}
         </span>
-      ) : showLabel ? (
-        config.label
       ) : (
-        config.short
+        config.label
       )}
     </div>
   );
