@@ -14,6 +14,7 @@ import {
   X,
   ChevronsDownUp,
   ChevronsUpDown,
+  Calendar,
 } from 'lucide-react';
 import {
   Select,
@@ -108,6 +109,8 @@ export function Heatmap() {
     updateTeamState,
     updateTeamEffort,
     updateTeamNotes,
+    updateLiveDate,
+    updateDueDate,
     addInitiative,
     removeInitiative,
     renameInitiative,
@@ -123,6 +126,8 @@ export function Heatmap() {
   const [addTeamValue, setAddTeamValue] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [editDateValue, setEditDateValue] = useState('');
 
   // Filter initiatives by theme
   const filteredInitiatives =
@@ -405,7 +410,7 @@ export function Heatmap() {
                     <tr
                       key={parentInit.id}
                       className={cn(
-                        'border-b border-border cursor-pointer transition-colors group',
+                        'border-b-2 border-border/60 cursor-pointer transition-colors group',
                         hasChildren
                           ? 'bg-muted/30 hover:bg-muted/50 border-l-2 border-l-primary/40'
                           : 'hover:bg-muted/30',
@@ -421,7 +426,7 @@ export function Heatmap() {
                                 e.stopPropagation();
                                 toggleInitiative(parentInit.id);
                               }}
-                              className="text-muted-foreground hover:text-foreground"
+                              className="text-muted-foreground hover:text-foreground flex-shrink-0"
                             >
                               {isCollapsed ? (
                                 <ChevronRight className="h-3.5 w-3.5" />
@@ -430,7 +435,7 @@ export function Heatmap() {
                               )}
                             </button>
                           )}
-                          {!hasChildren && <span className="w-3.5" />}
+                          {!hasChildren && <span className="w-3.5 flex-shrink-0" />}
                           {isRenaming ? (
                             <input
                               autoFocus
@@ -445,57 +450,101 @@ export function Heatmap() {
                               className="flex-1 bg-transparent border-b border-primary text-sm font-medium outline-none py-0.5"
                             />
                           ) : (
-                            <span
-                              className={cn(
-                                'flex-1 truncate text-sm',
-                                hasChildren ? 'font-semibold' : 'font-medium'
-                              )}
-                            >
-                              {parentInit.name}
-                              {hasChildren && (
-                                <span className="text-[10px] font-normal text-muted-foreground ml-1">
-                                  ({children.length})
-                                </span>
-                              )}
-                            </span>
-                          )}
-                          {!isRenaming && (
-                            <>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span
+                                className={cn(
+                                  'truncate text-sm',
+                                  hasChildren ? 'font-semibold' : 'font-medium'
+                                )}
+                              >
+                                {parentInit.name}
+                                {hasChildren && (
+                                  <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                                    ({children.length})
+                                  </span>
+                                )}
+                              </span>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   startRename(parentInit);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity flex-shrink-0"
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </button>
-                              <span onClick={(e) => e.stopPropagation()}>
-                                <ConfirmDelete
-                                  trigger={
-                                    <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                                      <Trash2 className="h-3 w-3" />
-                                    </button>
-                                  }
-                                  title={`Delete "${parentInit.name}"?`}
-                                  description={
-                                    hasChildren
-                                      ? 'This will delete this initiative and all its child items.'
-                                      : 'This will delete this initiative.'
-                                  }
-                                  onConfirm={() => removeInitiative(parentInit.id)}
-                                />
-                              </span>
-                            </>
+                            </div>
+                          )}
+                          <div className="flex-1" />
+                          {!isRenaming && (
+                            <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                              <ConfirmDelete
+                                trigger={
+                                  <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                }
+                                title={`Delete "${parentInit.name}"?`}
+                                description={
+                                  hasChildren
+                                    ? 'This will delete this initiative and all its child items.'
+                                    : 'This will delete this initiative.'
+                                }
+                                onConfirm={() => removeInitiative(parentInit.id)}
+                              />
+                            </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-2 py-2 h-10">
-                        {parentInit.liveDate && (
-                          <span className="text-[10px] font-medium text-primary truncate block">
-                            {parentInit.liveDate}
-                          </span>
-                        )}
+                      <td className="px-2 py-2 h-10" onClick={(e) => e.stopPropagation()}>
+                        <Popover
+                          open={editingDateId === parentInit.id}
+                          onOpenChange={(open) => {
+                            if (open) {
+                              setEditingDateId(parentInit.id);
+                              setEditDateValue(parentInit.liveDate ?? '');
+                            } else {
+                              if (editDateValue !== (parentInit.liveDate ?? '')) {
+                                updateLiveDate(parentInit.id, editDateValue);
+                              }
+                              setEditingDateId(null);
+                            }
+                          }}
+                        >
+                          <PopoverTrigger asChild>
+                            <button className="w-full text-left flex items-center gap-1 hover:bg-muted/50 rounded px-1 -mx-1 py-0.5">
+                              {parentInit.liveDate ? (
+                                <span className="text-[10px] font-medium text-primary truncate">
+                                  {parentInit.liveDate}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                                  <Calendar className="h-2.5 w-2.5" />
+                                  Add
+                                </span>
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-2" align="start">
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                              Live Date
+                            </p>
+                            <input
+                              autoFocus
+                              value={editDateValue}
+                              onChange={(e) => setEditDateValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  updateLiveDate(parentInit.id, editDateValue);
+                                  setEditingDateId(null);
+                                }
+                                if (e.key === 'Escape') setEditingDateId(null);
+                              }}
+                              placeholder="e.g., LIVE 29th June"
+                              className="w-full text-sm border border-border rounded px-2 py-1 bg-background outline-none focus:border-primary"
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </td>
                       {teams.map((team) => (
                         <td
@@ -542,14 +591,14 @@ export function Heatmap() {
                         <tr
                           key={child.id}
                           className={cn(
-                            'border-b border-border hover:bg-muted/20 cursor-pointer transition-colors group bg-background',
+                            'border-b border-border/40 hover:bg-muted/20 cursor-pointer transition-colors group bg-background',
                             isChildSelected && 'bg-primary/5 hover:bg-primary/10'
                           )}
                           onClick={() => setSelectedInit(child)}
                         >
                           <td className="px-3 py-1.5 pl-8 h-9">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-muted-foreground text-xs">└</span>
+                              <span className="text-muted-foreground text-xs shrink-0">└</span>
                               {isChildRenaming ? (
                                 <input
                                   autoFocus
@@ -564,43 +613,87 @@ export function Heatmap() {
                                   className="flex-1 bg-transparent border-b border-primary text-sm outline-none py-0.5"
                                 />
                               ) : (
-                                <span className="flex-1 truncate text-sm">
-                                  {child.name}
-                                </span>
-                              )}
-                              {!isChildRenaming && (
-                                <>
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className="truncate text-sm">
+                                    {child.name}
+                                  </span>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       startRename(child);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
+                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity shrink-0"
                                   >
                                     <Pencil className="h-2.5 w-2.5" />
                                   </button>
-                                  <span onClick={(e) => e.stopPropagation()}>
-                                    <ConfirmDelete
-                                      trigger={
-                                        <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                                          <Trash2 className="h-2.5 w-2.5" />
-                                        </button>
-                                      }
-                                      title={`Delete "${child.name}"?`}
-                                      description="This will delete this item."
-                                      onConfirm={() => removeInitiative(child.id)}
-                                    />
-                                  </span>
-                                </>
+                                </div>
+                              )}
+                              <div className="flex-1" />
+                              {!isChildRenaming && (
+                                <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                  <ConfirmDelete
+                                    trigger={
+                                      <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                        <Trash2 className="h-2.5 w-2.5" />
+                                      </button>
+                                    }
+                                    title={`Delete "${child.name}"?`}
+                                    description="This will delete this item."
+                                    onConfirm={() => removeInitiative(child.id)}
+                                  />
+                                </span>
                               )}
                             </div>
                           </td>
-                          <td className="px-2 py-1.5 h-9">
-                            {child.dueDate && (
-                              <span className="text-[10px] text-muted-foreground truncate block">
-                                {child.dueDate}
-                              </span>
-                            )}
+                          <td className="px-2 py-1.5 h-9" onClick={(e) => e.stopPropagation()}>
+                            <Popover
+                              open={editingDateId === child.id}
+                              onOpenChange={(open) => {
+                                if (open) {
+                                  setEditingDateId(child.id);
+                                  setEditDateValue(child.dueDate ?? '');
+                                } else {
+                                  if (editDateValue !== (child.dueDate ?? '')) {
+                                    updateDueDate(child.id, editDateValue);
+                                  }
+                                  setEditingDateId(null);
+                                }
+                              }}
+                            >
+                              <PopoverTrigger asChild>
+                                <button className="w-full text-left flex items-center gap-1 hover:bg-muted/50 rounded px-1 -mx-1 py-0.5">
+                                  {child.dueDate ? (
+                                    <span className="text-[10px] text-muted-foreground truncate">
+                                      {child.dueDate}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                                      <Calendar className="h-2.5 w-2.5" />
+                                      Add
+                                    </span>
+                                  )}
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-48 p-2" align="start">
+                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                  Due Date
+                                </p>
+                                <input
+                                  autoFocus
+                                  value={editDateValue}
+                                  onChange={(e) => setEditDateValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updateDueDate(child.id, editDateValue);
+                                      setEditingDateId(null);
+                                    }
+                                    if (e.key === 'Escape') setEditingDateId(null);
+                                  }}
+                                  placeholder="e.g., 15th May"
+                                  className="w-full text-sm border border-border rounded px-2 py-1 bg-background outline-none focus:border-primary"
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </td>
                           {teams.map((team) => (
                             <td
