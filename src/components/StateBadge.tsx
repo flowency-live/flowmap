@@ -67,7 +67,8 @@ export function StateBadge({
           {showLabel && config.label}
         </span>
       ) : (
-        config.label
+        // Use short form for N/A and N/S, full label for others
+        state === 'N/A' || state === 'N/S' ? config.short : config.label
       )}
     </div>
   );
