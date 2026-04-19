@@ -21,6 +21,7 @@ interface PortfolioStore extends PortfolioState {
   renameInitiative: (id: string, name: string) => Promise<void>;
   updateNotes: (id: string, notes: string) => Promise<void>;
   updateSequencingNotes: (id: string, notes: string) => Promise<void>;
+  updateInitiativeFavicon: (id: string, faviconUrl: string) => Promise<void>;
 
   // Team actions
   addTeam: (name: string) => Promise<void>;
@@ -49,6 +50,7 @@ function toLocalInitiative(amplifyInit: {
   themeId: string;
   parentId?: string | null;
   order?: number | null;
+  faviconUrl?: string | null;
   liveDate?: string | null;
   dueDate?: string | null;
   notes?: string | null;
@@ -87,7 +89,7 @@ function toLocalInitiative(amplifyInit: {
       teamNotes = {};
     }
   }
-  return {
+  const initiative: Initiative = {
     id: amplifyInit.id,
     name: amplifyInit.name,
     themeId: amplifyInit.themeId,
@@ -101,6 +103,8 @@ function toLocalInitiative(amplifyInit: {
     teamEfforts,
     teamNotes,
   };
+  if (amplifyInit.faviconUrl) initiative.faviconUrl = amplifyInit.faviconUrl;
+  return initiative;
 }
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
@@ -385,6 +389,43 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       await client.models.Initiative.update({ id, sequencingNotes: notes });
     } catch (err) {
       console.error('Failed to update sequencing notes:', err);
+    }
+  },
+
+  updateInitiativeFavicon: async (id, faviconUrl) => {
+    const initiative = get().initiatives.find((i) => i.id === id);
+    if (!initiative) return;
+
+    set((s) => ({
+      initiatives: s.initiatives.map((init) => {
+        if (init.id !== id) return init;
+        const updated = { ...init };
+        if (faviconUrl) {
+          updated.faviconUrl = faviconUrl;
+        } else {
+          delete updated.faviconUrl;
+        }
+        return updated;
+      }),
+    }));
+
+    try {
+      await client.models.Initiative.update({ id, faviconUrl: faviconUrl || null });
+    } catch (err) {
+      console.error('Failed to update initiative favicon:', err);
+      // Rollback on error
+      set((s) => ({
+        initiatives: s.initiatives.map((init) => {
+          if (init.id !== id) return init;
+          const restored = { ...init };
+          if (initiative.faviconUrl) {
+            restored.faviconUrl = initiative.faviconUrl;
+          } else {
+            delete restored.faviconUrl;
+          }
+          return restored;
+        }),
+      }));
     }
   },
 

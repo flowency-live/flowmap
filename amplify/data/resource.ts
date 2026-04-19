@@ -54,6 +54,7 @@ const schema = a.schema({
       theme: a.belongsTo('Theme', 'themeId'),
       parentId: a.id(),
       order: a.integer().default(0), // Explicit sort order
+      faviconUrl: a.string(), // Brand favicon/logo URL for parent initiatives
       liveDate: a.string(), // Go-live date for parent initiatives
       dueDate: a.string(), // UAT delivery date for child items
       notes: a.string().default(''),

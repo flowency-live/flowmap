@@ -490,19 +490,16 @@ export function Heatmap() {
                             />
                           ) : (
                             <div className="flex items-center gap-1 min-w-0">
-                              {(() => {
-                                const theme = themes.find((t) => t.id === parentInit.themeId);
-                                return theme?.faviconUrl ? (
-                                  <img
-                                    src={theme.faviconUrl}
-                                    alt=""
-                                    className="h-4 w-4 rounded-sm object-contain shrink-0"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                  />
-                                ) : null;
-                              })()}
+                              {parentInit.faviconUrl && (
+                                <img
+                                  src={parentInit.faviconUrl}
+                                  alt=""
+                                  className="h-4 w-4 rounded-sm object-contain shrink-0"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              )}
                               <span
                                 className={cn(
                                   'truncate text-sm',

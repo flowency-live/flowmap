@@ -1,24 +1,30 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Globe, Check, X, ExternalLink } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { cn } from '@/lib/utils';
 
 export function Config() {
-  const themes = usePortfolioStore((s) => s.themes);
-  const updateThemeFavicon = usePortfolioStore((s) => s.updateThemeFavicon);
+  const initiatives = usePortfolioStore((s) => s.initiatives);
+  const updateInitiativeFavicon = usePortfolioStore((s) => s.updateInitiativeFavicon);
+
+  // Only show parent initiatives (top-level items that can have branding)
+  const parentInitiatives = useMemo(
+    () => initiatives.filter((i) => i.parentId === null),
+    [initiatives]
+  );
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const startEdit = (themeId: string, currentUrl: string | undefined) => {
-    setEditingId(themeId);
+  const startEdit = (initId: string, currentUrl: string | undefined) => {
+    setEditingId(initId);
     setEditValue(currentUrl ?? '');
   };
 
   const saveEdit = async () => {
     if (editingId) {
-      await updateThemeFavicon(editingId, editValue);
+      await updateInitiativeFavicon(editingId, editValue);
       setEditingId(null);
       setEditValue('');
     }
@@ -43,7 +49,7 @@ export function Config() {
           <div>
             <h1 className="text-xl font-semibold">Configuration</h1>
             <p className="text-sm text-muted-foreground">
-              Manage themes and brand settings
+              Manage initiative branding and settings
             </p>
           </div>
         </div>
@@ -52,11 +58,11 @@ export function Config() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl">
-          {/* Theme Branding Section */}
+          {/* Initiative Branding Section */}
           <section>
-            <h2 className="text-lg font-semibold mb-1">Theme Branding</h2>
+            <h2 className="text-lg font-semibold mb-1">Initiative Branding</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Add favicon URLs for each theme to display brand logos in the heatmap.
+              Add favicon URLs for each initiative to display brand logos in the heatmap.
               You can use any image URL (favicon, logo, etc.)
             </p>
 
@@ -64,24 +70,24 @@ export function Config() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold">Theme</th>
+                    <th className="px-4 py-3 text-left font-semibold">Initiative</th>
                     <th className="px-4 py-3 text-left font-semibold">Preview</th>
                     <th className="px-4 py-3 text-left font-semibold">Favicon URL</th>
                     <th className="px-4 py-3 w-24"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {themes.map((theme) => (
+                  {parentInitiatives.map((init) => (
                     <tr
-                      key={theme.id}
+                      key={init.id}
                       className="border-b border-border/50 last:border-b-0"
                     >
-                      <td className="px-4 py-3 font-medium">{theme.name}</td>
+                      <td className="px-4 py-3 font-medium">{init.name}</td>
                       <td className="px-4 py-3">
-                        {theme.faviconUrl ? (
+                        {init.faviconUrl ? (
                           <img
-                            src={theme.faviconUrl}
-                            alt={theme.name}
+                            src={init.faviconUrl}
+                            alt={init.name}
                             className="h-6 w-6 rounded object-contain bg-muted"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
@@ -94,7 +100,7 @@ export function Config() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {editingId === theme.id ? (
+                        {editingId === init.id ? (
                           <input
                             type="text"
                             value={editValue}
@@ -111,17 +117,17 @@ export function Config() {
                           <span
                             className={cn(
                               'text-sm truncate max-w-xs block',
-                              theme.faviconUrl
+                              init.faviconUrl
                                 ? 'text-foreground'
                                 : 'text-muted-foreground italic'
                             )}
                           >
-                            {theme.faviconUrl || 'Not set'}
+                            {init.faviconUrl || 'Not set'}
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {editingId === theme.id ? (
+                        {editingId === init.id ? (
                           <div className="flex items-center gap-1">
                             <button
                               onClick={saveEdit}
@@ -141,14 +147,14 @@ export function Config() {
                         ) : (
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => startEdit(theme.id, theme.faviconUrl)}
+                              onClick={() => startEdit(init.id, init.faviconUrl)}
                               className="px-2 py-1 text-xs text-primary hover:bg-accent rounded"
                             >
                               Edit
                             </button>
-                            {theme.faviconUrl && (
+                            {init.faviconUrl && (
                               <a
-                                href={theme.faviconUrl}
+                                href={init.faviconUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-1 text-muted-foreground hover:text-foreground"
@@ -165,9 +171,9 @@ export function Config() {
                 </tbody>
               </table>
 
-              {themes.length === 0 && (
+              {parentInitiatives.length === 0 && (
                 <div className="p-8 text-center text-muted-foreground">
-                  No themes configured yet
+                  No initiatives configured yet
                 </div>
               )}
             </div>
