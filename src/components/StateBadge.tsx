@@ -8,11 +8,11 @@ interface StateBadgeProps {
   className?: string;
 }
 
-// Refined sizes - readable but compact
+// Bold, readable sizes
 const SIZE_CLASSES = {
-  sm: 'h-5 px-2 text-[10px]',
-  md: 'h-6 px-2.5 text-[11px]',
-  lg: 'h-7 px-3 text-xs',
+  sm: 'h-5 px-2.5 text-[10px]',
+  md: 'h-6 px-3 text-[11px]',
+  lg: 'h-7 px-3.5 text-xs',
 };
 
 export function StateBadge({
@@ -34,15 +34,15 @@ export function StateBadge({
       className={cn(
         // Base styles
         'inline-flex items-center justify-center',
-        'rounded-[4px] tracking-wide',
+        'rounded-[4px] tracking-wide uppercase',
         'transition-all duration-150',
-        // Subtle shadow and border for depth
+        // Shadow and border for depth
         'shadow-sm',
         isEmphasis
-          ? 'ring-1 ring-inset ring-current/30'
-          : 'border border-black/[0.06]',
-        // Typography
-        isNA ? 'font-medium' : 'font-semibold',
+          ? 'ring-1 ring-inset ring-current/40 shadow-md'
+          : 'border border-black/10',
+        // Typography - bold for visibility
+        isNA ? 'font-medium' : 'font-bold',
         // Size
         SIZE_CLASSES[size],
         // Hover effect

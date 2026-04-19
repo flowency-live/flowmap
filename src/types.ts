@@ -90,61 +90,61 @@ export interface StateConfig {
 }
 
 export const STATE_CONFIG: Record<FlowState, StateConfig> = {
-  // N/A: Very subtle - this is noise, kill it visually
+  // N/A: Subtle gray - this is noise, kill it visually
   'N/A': {
     label: 'Not Applicable',
     short: 'N/A',
-    bgColor: '#F8F8F8',
-    textColor: '#A0A0A0',
+    bgColor: '#F0F0F0',
+    textColor: '#909090',
   },
-  // Not Started: Soft amber - waiting, needs attention
+  // Not Started: Bold amber - waiting, needs attention
   'N/S': {
     label: 'Not Started',
     short: 'N/S',
-    bgColor: '#FEF3E2',
-    textColor: '#B45309',
+    bgColor: '#FFEDD5',
+    textColor: '#C2410C',
   },
-  // Discovery: Soft yellow - early stage exploration
+  // Discovery: Bold yellow - early stage exploration
   Discovery: {
     label: 'Discovery',
     short: 'Disc',
-    bgColor: '#FEF9E7',
-    textColor: '#CA8A04',
+    bgColor: '#FEF3C7',
+    textColor: '#B45309',
   },
-  // Ready: Soft green - go signal, ready to start
+  // Ready: Lime/chartreuse - GO signal, can start but hasn't
   Ready: {
     label: 'Ready',
     short: 'Ready',
-    bgColor: '#ECFDF5',
-    textColor: '#059669',
+    bgColor: '#ECFCCB',
+    textColor: '#4D7C0F',
   },
-  // Constrained: Soft purple - bottleneck, must POP
+  // Constrained: Bold purple - bottleneck, must POP
   Constrained: {
     label: 'Constrained',
     short: 'Const',
-    bgColor: '#F3E8FF',
+    bgColor: '#E9D5FF',
     textColor: '#7C3AED',
   },
-  // Doing: Soft blue - actively in progress
+  // Doing: Bold blue - actively in progress
   Doing: {
     label: 'Doing',
     short: 'Doing',
-    bgColor: '#EFF6FF',
-    textColor: '#2563EB',
+    bgColor: '#DBEAFE',
+    textColor: '#1D4ED8',
   },
-  // Done: Green - success, complete
+  // Done: Rich green - complete, success
   Done: {
     label: 'Done',
     short: 'Done',
-    bgColor: '#DCFCE7',
-    textColor: '#16A34A',
+    bgColor: '#BBF7D0',
+    textColor: '#15803D',
   },
-  // Blocked: Soft red - problem, must POP
+  // Blocked: Bold red - problem, must POP
   Blocked: {
     label: 'Blocked',
     short: 'Block',
-    bgColor: '#FEE2E2',
-    textColor: '#DC2626',
+    bgColor: '#FECACA',
+    textColor: '#B91C1C',
   },
 };
 
