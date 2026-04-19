@@ -503,26 +503,23 @@ export function Heatmap() {
                               >
                                 <Pencil className="h-2.5 w-2.5" />
                               </button>
+                              <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                                <ConfirmDelete
+                                  trigger={
+                                    <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  }
+                                  title={`Delete "${parentInit.name}"?`}
+                                  description={
+                                    hasChildren
+                                      ? 'This will delete this initiative and all its child items.'
+                                      : 'This will delete this initiative.'
+                                  }
+                                  onConfirm={() => removeInitiative(parentInit.id)}
+                                />
+                              </span>
                             </div>
-                          )}
-                          <div className="flex-1" />
-                          {!isRenaming && (
-                            <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-                              <ConfirmDelete
-                                trigger={
-                                  <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                }
-                                title={`Delete "${parentInit.name}"?`}
-                                description={
-                                  hasChildren
-                                    ? 'This will delete this initiative and all its child items.'
-                                    : 'This will delete this initiative.'
-                                }
-                                onConfirm={() => removeInitiative(parentInit.id)}
-                              />
-                            </span>
                           )}
                         </div>
                       </td>
@@ -646,22 +643,19 @@ export function Heatmap() {
                                   >
                                     <Pencil className="h-2.5 w-2.5" />
                                   </button>
+                                  <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                    <ConfirmDelete
+                                      trigger={
+                                        <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                                          <Trash2 className="h-2.5 w-2.5" />
+                                        </button>
+                                      }
+                                      title={`Delete "${child.name}"?`}
+                                      description="This will delete this item."
+                                      onConfirm={() => removeInitiative(child.id)}
+                                    />
+                                  </span>
                                 </div>
-                              )}
-                              <div className="flex-1" />
-                              {!isChildRenaming && (
-                                <span onClick={(e) => e.stopPropagation()} className="shrink-0">
-                                  <ConfirmDelete
-                                    trigger={
-                                      <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                                        <Trash2 className="h-2.5 w-2.5" />
-                                      </button>
-                                    }
-                                    title={`Delete "${child.name}"?`}
-                                    description="This will delete this item."
-                                    onConfirm={() => removeInitiative(child.id)}
-                                  />
-                                </span>
                               )}
                             </div>
                           </td>
