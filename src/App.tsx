@@ -11,7 +11,7 @@ import { Config } from '@/pages/Config';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { client } from '@/lib/amplifyClient';
-import type { Theme, Team, Initiative, FlowState, Effort, TeamCapacity } from '@/types';
+import type { Theme, Team, Initiative, FlowState, Effort, TeamCapacity, Dependency } from '@/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SubscriptionData = any;
@@ -26,6 +26,8 @@ function App() {
   const _applyTeamDelete = usePortfolioStore((s) => s._applyTeamDelete);
   const _applyThemeUpdate = usePortfolioStore((s) => s._applyThemeUpdate);
   const _applyThemeDelete = usePortfolioStore((s) => s._applyThemeDelete);
+  const _applyDependencyUpdate = usePortfolioStore((s) => s._applyDependencyUpdate);
+  const _applyDependencyDelete = usePortfolioStore((s) => s._applyDependencyDelete);
 
   // Theme management
   const theme = useThemeStore((s) => s.theme);
@@ -261,6 +263,46 @@ function App() {
     });
     subscriptions.push(themeDeleteSub);
 
+    // Dependency subscriptions
+    const depCreateSub = client.models.Dependency.onCreate().subscribe({
+      next: (data: SubscriptionData) => {
+        if (data) {
+          const dependency: Dependency = {
+            id: data.id,
+            fromInitiativeId: data.fromInitiativeId,
+            toInitiativeId: data.toInitiativeId,
+            notes: data.notes ?? undefined,
+          };
+          _applyDependencyUpdate(dependency);
+        }
+      },
+    });
+    subscriptions.push(depCreateSub);
+
+    const depUpdateSub = client.models.Dependency.onUpdate().subscribe({
+      next: (data: SubscriptionData) => {
+        if (data) {
+          const dependency: Dependency = {
+            id: data.id,
+            fromInitiativeId: data.fromInitiativeId,
+            toInitiativeId: data.toInitiativeId,
+            notes: data.notes ?? undefined,
+          };
+          _applyDependencyUpdate(dependency);
+        }
+      },
+    });
+    subscriptions.push(depUpdateSub);
+
+    const depDeleteSub = client.models.Dependency.onDelete().subscribe({
+      next: (data: SubscriptionData) => {
+        if (data) {
+          _applyDependencyDelete(data.id);
+        }
+      },
+    });
+    subscriptions.push(depDeleteSub);
+
     // Cleanup subscriptions on unmount
     return () => {
       subscriptions.forEach((sub) => sub.unsubscribe());
@@ -273,6 +315,8 @@ function App() {
     _applyTeamDelete,
     _applyThemeUpdate,
     _applyThemeDelete,
+    _applyDependencyUpdate,
+    _applyDependencyDelete,
   ]);
 
   if (isLoading) {

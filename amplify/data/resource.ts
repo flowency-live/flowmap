@@ -72,6 +72,27 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()])
     .secondaryIndexes((index) => [index('themeId').name('byTheme')]),
+
+  /**
+   * Dependency - Cross-initiative blocking relationships
+   *
+   * Tracks when one initiative blocks another:
+   * - fromInitiativeId: The blocking initiative (must complete first)
+   * - toInitiativeId: The blocked initiative (waiting on fromInitiative)
+   *
+   * Example: UIE's "Insurer Dynamic Display" blocks UPJ's "Exclude Rebroke"
+   */
+  Dependency: a
+    .model({
+      fromInitiativeId: a.id().required(), // The blocking initiative
+      toInitiativeId: a.id().required(), // The blocked initiative
+      notes: a.string(), // Optional description of the dependency
+    })
+    .authorization((allow) => [allow.publicApiKey()])
+    .secondaryIndexes((index) => [
+      index('fromInitiativeId').name('byFromInitiative'),
+      index('toInitiativeId').name('byToInitiative'),
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

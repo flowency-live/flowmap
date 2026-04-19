@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Calendar as CalendarIcon } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, Calendar as CalendarIcon, Link2, Plus, Trash2 } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -42,15 +42,50 @@ function formatDateString(date: Date, isLiveDate: boolean): string {
 export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps) {
   const {
     teams,
+    initiatives,
     updateNotes,
     updateSequencingNotes,
     updateLiveDate,
     updateDueDate,
+    getDependenciesFor,
+    addDependency,
+    removeDependency,
   } = usePortfolioStore();
 
   const [notes, setNotes] = useState('');
   const [seqNotes, setSeqNotes] = useState('');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [addingBlockedBy, setAddingBlockedBy] = useState(false);
+  const [addingBlocks, setAddingBlocks] = useState(false);
+
+  // Get dependencies for this initiative
+  const dependencies = useMemo(
+    () => (initiative ? getDependenciesFor(initiative.id) : { blockedBy: [], blocks: [] }),
+    [initiative, getDependenciesFor]
+  );
+
+  // Get available initiatives for dependency selection (exclude current and already linked)
+  const availableForBlockedBy = useMemo(() => {
+    if (!initiative) return [];
+    const blockedByIds = new Set(dependencies.blockedBy.map((d) => d.fromInitiativeId));
+    return initiatives.filter(
+      (i) => i.id !== initiative.id && !blockedByIds.has(i.id)
+    );
+  }, [initiative, initiatives, dependencies.blockedBy]);
+
+  const availableForBlocks = useMemo(() => {
+    if (!initiative) return [];
+    const blocksIds = new Set(dependencies.blocks.map((d) => d.toInitiativeId));
+    return initiatives.filter(
+      (i) => i.id !== initiative.id && !blocksIds.has(i.id)
+    );
+  }, [initiative, initiatives, dependencies.blocks]);
+
+  // Helper to get initiative name by ID
+  const getInitiativeName = (id: string) => {
+    const init = initiatives.find((i) => i.id === id);
+    return init?.name ?? 'Unknown';
+  };
 
   useEffect(() => {
     if (initiative) {
@@ -179,6 +214,122 @@ export function InitiativeDetail({ initiative, onClose }: InitiativeDetailProps)
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Dependencies */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Dependencies
+            </h3>
+          </div>
+
+          {/* Blocked By */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground">Blocked by</span>
+              <button
+                onClick={() => setAddingBlockedBy(!addingBlockedBy)}
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+              >
+                <Plus className="h-3 w-3" />
+                Add
+              </button>
+            </div>
+            {addingBlockedBy && availableForBlockedBy.length > 0 && (
+              <select
+                className="w-full px-2 py-1 text-xs border border-input rounded bg-background mb-1"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addDependency(e.target.value, initiative.id);
+                    setAddingBlockedBy(false);
+                  }
+                }}
+              >
+                <option value="">Select initiative...</option>
+                {availableForBlockedBy.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {dependencies.blockedBy.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No blockers</p>
+            ) : (
+              <div className="space-y-1">
+                {dependencies.blockedBy.map((dep) => (
+                  <div
+                    key={dep.id}
+                    className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs"
+                  >
+                    <span className="truncate">{getInitiativeName(dep.fromInitiativeId)}</span>
+                    <button
+                      onClick={() => removeDependency(dep.id)}
+                      className="text-muted-foreground hover:text-destructive ml-2"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Blocks */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-muted-foreground">Blocks</span>
+              <button
+                onClick={() => setAddingBlocks(!addingBlocks)}
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+              >
+                <Plus className="h-3 w-3" />
+                Add
+              </button>
+            </div>
+            {addingBlocks && availableForBlocks.length > 0 && (
+              <select
+                className="w-full px-2 py-1 text-xs border border-input rounded bg-background mb-1"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addDependency(initiative.id, e.target.value);
+                    setAddingBlocks(false);
+                  }
+                }}
+              >
+                <option value="">Select initiative...</option>
+                {availableForBlocks.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {dependencies.blocks.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Not blocking anything</p>
+            ) : (
+              <div className="space-y-1">
+                {dependencies.blocks.map((dep) => (
+                  <div
+                    key={dep.id}
+                    className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded text-xs"
+                  >
+                    <span className="truncate">{getInitiativeName(dep.toInitiativeId)}</span>
+                    <button
+                      onClick={() => removeDependency(dep.id)}
+                      className="text-muted-foreground hover:text-destructive ml-2"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

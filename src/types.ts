@@ -42,6 +42,18 @@ export interface Team {
   capacityConfig?: TeamCapacity;
 }
 
+/**
+ * Dependency - Cross-initiative blocking relationship
+ * - fromInitiativeId: The blocking initiative (must complete first)
+ * - toInitiativeId: The blocked initiative (waiting on fromInitiative)
+ */
+export interface Dependency {
+  id: string;
+  fromInitiativeId: string;
+  toInitiativeId: string;
+  notes?: string;
+}
+
 export type Effort =
   | '1d'
   | '3d'

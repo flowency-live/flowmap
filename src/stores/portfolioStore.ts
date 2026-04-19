@@ -1,12 +1,16 @@
 import { create } from 'zustand';
-import type { Theme, Team, Initiative, FlowState, Effort, PortfolioState, TeamCapacity } from '@/types';
+import type { Theme, Team, Initiative, FlowState, Effort, PortfolioState, TeamCapacity, Dependency } from '@/types';
 import { client } from '@/lib/amplifyClient';
 import { toast } from '@/stores/toastStore';
+import { wouldCreateCycle } from '@/lib/dependencies';
 
 interface PortfolioStore extends PortfolioState {
   // Loading state
   isLoading: boolean;
   error: string | null;
+
+  // Dependencies
+  dependencies: Dependency[];
 
   // Data loading
   loadPortfolio: () => Promise<void>;
@@ -36,6 +40,11 @@ interface PortfolioStore extends PortfolioState {
   renameTheme: (id: string, name: string) => Promise<void>;
   updateThemeFavicon: (id: string, faviconUrl: string) => Promise<void>;
 
+  // Dependency actions
+  addDependency: (fromInitiativeId: string, toInitiativeId: string, notes?: string) => Promise<void>;
+  removeDependency: (id: string) => Promise<void>;
+  getDependenciesFor: (initiativeId: string) => { blockedBy: Dependency[]; blocks: Dependency[] };
+
   // Internal: apply updates from subscriptions
   _applyInitiativeUpdate: (initiative: Initiative) => void;
   _applyInitiativeDelete: (id: string) => void;
@@ -43,6 +52,8 @@ interface PortfolioStore extends PortfolioState {
   _applyTeamDelete: (id: string) => void;
   _applyThemeUpdate: (theme: Theme) => void;
   _applyThemeDelete: (id: string) => void;
+  _applyDependencyUpdate: (dependency: Dependency) => void;
+  _applyDependencyDelete: (id: string) => void;
 }
 
 // Convert AppSync Initiative to local type
@@ -114,6 +125,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   themes: [],
   teams: [],
   initiatives: [],
+  dependencies: [],
   isLoading: true,
   error: null,
 
@@ -121,10 +133,11 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   loadPortfolio: async () => {
     set({ isLoading: true, error: null });
     try {
-      const [themesResult, teamsResult, initiativesResult] = await Promise.all([
+      const [themesResult, teamsResult, initiativesResult, dependenciesResult] = await Promise.all([
         client.models.Theme.list(),
         client.models.Team.list(),
         client.models.Initiative.list(),
+        client.models.Dependency.list(),
       ]);
 
       const themes: Theme[] = (themesResult.data ?? []).map((t: { id: string; name: string; faviconUrl?: string | null }) => {
@@ -156,7 +169,17 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         .map(toLocalInitiative)
         .sort((a: Initiative, b: Initiative) => a.order - b.order);
 
-      set({ themes, teams, initiatives, isLoading: false });
+      const dependencies: Dependency[] = (dependenciesResult.data ?? []).map((d: { id: string; fromInitiativeId: string; toInitiativeId: string; notes?: string | null }) => {
+        const dep: Dependency = {
+          id: d.id,
+          fromInitiativeId: d.fromInitiativeId,
+          toInitiativeId: d.toInitiativeId,
+        };
+        if (d.notes) dep.notes = d.notes;
+        return dep;
+      });
+
+      set({ themes, teams, initiatives, dependencies, isLoading: false });
     } catch (err) {
       console.error('Failed to load portfolio:', err);
       set({ error: 'Failed to load data', isLoading: false });
@@ -685,6 +708,85 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     }
   },
 
+  // Dependency actions
+  addDependency: async (fromInitiativeId, toInitiativeId, notes) => {
+    // Prevent self-dependency
+    if (fromInitiativeId === toInitiativeId) {
+      toast.error('Cannot create a dependency on itself');
+      return;
+    }
+
+    // Check if dependency already exists
+    const dependencies = get().dependencies;
+    const existing = dependencies.find(
+      (d) => d.fromInitiativeId === fromInitiativeId && d.toInitiativeId === toInitiativeId
+    );
+    if (existing) {
+      toast.error('Dependency already exists');
+      return;
+    }
+
+    // Check for cycles
+    if (wouldCreateCycle(dependencies, fromInitiativeId, toInitiativeId)) {
+      toast.error('Cannot add dependency: would create a circular reference');
+      return;
+    }
+
+    try {
+      const createInput: { fromInitiativeId: string; toInitiativeId: string; notes?: string } = {
+        fromInitiativeId,
+        toInitiativeId,
+      };
+      if (notes) createInput.notes = notes;
+
+      const result = await client.models.Dependency.create(createInput);
+
+      if (result.data) {
+        const newDependency: Dependency = {
+          id: result.data.id,
+          fromInitiativeId: result.data.fromInitiativeId,
+          toInitiativeId: result.data.toInitiativeId,
+        };
+        if (result.data.notes) newDependency.notes = result.data.notes;
+        set((s) => ({ dependencies: [...s.dependencies, newDependency] }));
+        toast.success('Dependency added');
+      }
+    } catch (err) {
+      console.error('Failed to add dependency:', err);
+      toast.error('Failed to add dependency');
+    }
+  },
+
+  removeDependency: async (id) => {
+    const dependency = get().dependencies.find((d) => d.id === id);
+    if (!dependency) return;
+
+    // Optimistic update
+    set((s) => ({
+      dependencies: s.dependencies.filter((d) => d.id !== id),
+    }));
+
+    try {
+      await client.models.Dependency.delete({ id });
+      toast.success('Dependency removed');
+    } catch (err) {
+      console.error('Failed to remove dependency:', err);
+      toast.error('Failed to remove dependency');
+      // Rollback on error
+      set((s) => ({ dependencies: [...s.dependencies, dependency] }));
+    }
+  },
+
+  getDependenciesFor: (initiativeId) => {
+    const dependencies = get().dependencies;
+    return {
+      // This initiative is blocked by these (fromInitiativeId blocks toInitiativeId)
+      blockedBy: dependencies.filter((d) => d.toInitiativeId === initiativeId),
+      // This initiative blocks these
+      blocks: dependencies.filter((d) => d.fromInitiativeId === initiativeId),
+    };
+  },
+
   // Internal subscription handlers
   _applyInitiativeUpdate: (initiative) => {
     set((s) => {
@@ -751,6 +853,22 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     set((s) => ({
       themes: s.themes.filter((t) => t.id !== id),
       initiatives: s.initiatives.filter((i) => i.themeId !== id),
+    }));
+  },
+
+  _applyDependencyUpdate: (dependency) => {
+    set((s) => {
+      const exists = s.dependencies.some((d) => d.id === dependency.id);
+      if (exists) {
+        return { dependencies: s.dependencies.map((d) => (d.id === dependency.id ? dependency : d)) };
+      }
+      return { dependencies: [...s.dependencies, dependency] };
+    });
+  },
+
+  _applyDependencyDelete: (id) => {
+    set((s) => ({
+      dependencies: s.dependencies.filter((d) => d.id !== id),
     }));
   },
 }));
