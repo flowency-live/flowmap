@@ -10,6 +10,7 @@ frontend:
     preBuild:
       commands:
         - npm install
+        - cp amplify_outputs.json public/amplify_outputs.json
     build:
       commands:
         - npm run build

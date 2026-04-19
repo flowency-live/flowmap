@@ -6,7 +6,6 @@ dist/
 
 # Amplify
 amplify_outputs.json
-!public/amplify_outputs.json
 amplify_outputs.d.ts
 .amplify/
 
