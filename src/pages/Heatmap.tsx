@@ -252,7 +252,7 @@ export function Heatmap() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-1 p-5 space-y-4 overflow-auto"
+        className="flex-1 p-5 space-y-4 overflow-y-scroll overflow-x-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
