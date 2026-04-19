@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { StatePicker } from '@/components/StatePicker';
-import type { FlowState, Initiative, Theme, Effort } from '@/types';
+import type { FlowState, Initiative, Effort } from '@/types';
 import { FLOW_STATES, STATE_CONFIG } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -23,12 +23,10 @@ export function TeamKanban() {
 
   const teams = usePortfolioStore((s) => s.teams);
   const initiatives = usePortfolioStore((s) => s.initiatives);
-  const themes = usePortfolioStore((s) => s.themes);
   const updateTeamState = usePortfolioStore((s) => s.updateTeamState);
   const updateTeamEffort = usePortfolioStore((s) => s.updateTeamEffort);
   const updateTeamNotes = usePortfolioStore((s) => s.updateTeamNotes);
 
-  const [collapsedThemes, setCollapsedThemes] = useState<Set<string>>(new Set());
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
 
@@ -46,71 +44,39 @@ export function TeamKanban() {
     });
   }, [initiatives, teamId]);
 
-  // Group by theme, then by parent/child
-  const groupedByTheme = useMemo(() => {
-    const themeMap = new Map<string, { theme: Theme; initiatives: Initiative[] }>();
+  // Get parent initiatives (no theme grouping - just flat list of parents)
+  const parentInitiatives = useMemo(() => {
+    return relevantInitiatives.filter((i) => !i.parentId);
+  }, [relevantInitiatives]);
 
-    relevantInitiatives.forEach((init) => {
-      if (!themeMap.has(init.themeId)) {
-        const theme = themes.find((t) => t.id === init.themeId);
-        if (theme) {
-          themeMap.set(init.themeId, { theme, initiatives: [] });
-        }
-      }
-      themeMap.get(init.themeId)?.initiatives.push(init);
-    });
-
-    return Array.from(themeMap.values());
-  }, [relevantInitiatives, themes]);
+  // Get parents that have children
+  const parentsWithChildren = useMemo(() => {
+    return new Set(
+      parentInitiatives
+        .filter((p) => relevantInitiatives.some((c) => c.parentId === p.id))
+        .map((p) => p.id)
+    );
+  }, [parentInitiatives, relevantInitiatives]);
 
   // Default to collapsed state when data loads
   useEffect(() => {
-    if (groupedByTheme.length > 0 && !initialCollapseApplied) {
-      // Collapse all themes
-      const allThemeIds = new Set(groupedByTheme.map(({ theme }) => theme.id));
-      setCollapsedThemes(allThemeIds);
-
+    if (parentInitiatives.length > 0 && !initialCollapseApplied) {
       // Collapse all parents
-      const allParentIds = new Set(
-        relevantInitiatives
-          .filter((i) => !i.parentId)
-          .map((i) => i.id)
-      );
-      setCollapsedParents(allParentIds);
+      setCollapsedParents(new Set(parentsWithChildren));
       setInitialCollapseApplied(true);
     }
-  }, [groupedByTheme, relevantInitiatives, initialCollapseApplied]);
+  }, [parentInitiatives, parentsWithChildren, initialCollapseApplied]);
 
   // Expand/Collapse all functions
   const expandAll = () => {
-    setCollapsedThemes(new Set());
     setCollapsedParents(new Set());
   };
 
   const collapseAll = () => {
-    const allThemeIds = new Set(groupedByTheme.map(({ theme }) => theme.id));
-    setCollapsedThemes(allThemeIds);
-    const allParentIds = new Set(
-      relevantInitiatives
-        .filter((i) => !i.parentId)
-        .map((i) => i.id)
-    );
-    setCollapsedParents(allParentIds);
+    setCollapsedParents(new Set(parentsWithChildren));
   };
 
-  const isAllCollapsed = collapsedThemes.size === groupedByTheme.length;
-
-  const toggleTheme = (themeId: string) => {
-    setCollapsedThemes((prev) => {
-      const next = new Set(prev);
-      if (next.has(themeId)) {
-        next.delete(themeId);
-      } else {
-        next.add(themeId);
-      }
-      return next;
-    });
-  };
+  const isAllCollapsed = collapsedParents.size === parentsWithChildren.size && parentsWithChildren.size > 0;
 
   const toggleParent = (parentId: string) => {
     setCollapsedParents((prev) => {
@@ -263,8 +229,7 @@ export function TeamKanban() {
               {team.isPrimaryConstraint && <AlertTriangle className="h-5 w-5" />}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {relevantInitiatives.length} active items across{' '}
-              {groupedByTheme.length} themes
+              {relevantInitiatives.length} active items
             </p>
           </div>
         </div>
@@ -305,73 +270,28 @@ export function TeamKanban() {
               </tr>
             </thead>
             <tbody>
-              {groupedByTheme.map(({ theme, initiatives: themeInits }) => {
-                const isThemeCollapsed = collapsedThemes.has(theme.id);
-
-                // Get parents and children
-                const parents = themeInits.filter((i) => !i.parentId);
-                const childrenMap = new Map<string, Initiative[]>();
-                themeInits.forEach((i) => {
-                  if (i.parentId) {
-                    if (!childrenMap.has(i.parentId)) {
-                      childrenMap.set(i.parentId, []);
-                    }
-                    childrenMap.get(i.parentId)!.push(i);
-                  }
-                });
+              {parentInitiatives.map((parent) => {
+                const children = relevantInitiatives.filter(
+                  (i) => i.parentId === parent.id
+                );
+                const hasChildren = children.length > 0;
+                const isParentCollapsed = collapsedParents.has(parent.id);
 
                 return (
-                  <React.Fragment key={theme.id}>
-                    {/* Theme Header */}
-                    <tr className="bg-muted/30 border-t-2 border-t-border">
-                      <td
-                        colSpan={KANBAN_STATES.length + 1}
-                        className="px-3 py-2"
-                      >
-                        <button
-                          onClick={() => toggleTheme(theme.id)}
-                          className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                        >
-                          {isThemeCollapsed ? (
-                            <ChevronRight className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                          {theme.name}
-                          <span className="text-xs font-normal text-muted-foreground">
-                            ({themeInits.length})
-                          </span>
-                        </button>
-                      </td>
-                    </tr>
-
-                    {/* Theme content */}
-                    {!isThemeCollapsed &&
-                      parents.map((parent) => {
-                        const children = childrenMap.get(parent.id) ?? [];
-                        const hasChildren = children.length > 0;
-                        const isParentCollapsed = collapsedParents.has(
-                          parent.id
-                        );
-
-                        return (
-                          <React.Fragment key={parent.id}>
-                            {renderInitiativeRow(parent, false, hasChildren)}
-                            {hasChildren &&
-                              !isParentCollapsed &&
-                              children.map((child) =>
-                                renderInitiativeRow(child, true, false)
-                              )}
-                          </React.Fragment>
-                        );
-                      })}
+                  <React.Fragment key={parent.id}>
+                    {renderInitiativeRow(parent, false, hasChildren)}
+                    {hasChildren &&
+                      !isParentCollapsed &&
+                      children.map((child) =>
+                        renderInitiativeRow(child, true, false)
+                      )}
                   </React.Fragment>
                 );
               })}
             </tbody>
           </table>
 
-          {groupedByTheme.length === 0 && (
+          {parentInitiatives.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               No active work for this team
             </div>
