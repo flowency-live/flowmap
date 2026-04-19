@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRoute, Link } from 'wouter';
 import { motion } from 'framer-motion';
 import {
@@ -6,9 +6,9 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  ChevronsUpDown,
 } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
-import { StateBadge } from '@/components/StateBadge';
 import { StatePicker } from '@/components/StatePicker';
 import type { FlowState, Initiative, Theme, Effort } from '@/types';
 import { FLOW_STATES, STATE_CONFIG } from '@/types';
@@ -28,12 +28,9 @@ export function TeamKanban() {
   const updateTeamEffort = usePortfolioStore((s) => s.updateTeamEffort);
   const updateTeamNotes = usePortfolioStore((s) => s.updateTeamNotes);
 
-  const [collapsedThemes, setCollapsedThemes] = useState<Set<string>>(
-    new Set()
-  );
-  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
-    new Set()
-  );
+  const [collapsedThemes, setCollapsedThemes] = useState<Set<string>>(new Set());
+  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
+  const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
 
   const team = useMemo(
     () => teams.find((t) => t.id === teamId),
@@ -65,6 +62,43 @@ export function TeamKanban() {
 
     return Array.from(themeMap.values());
   }, [relevantInitiatives, themes]);
+
+  // Default to collapsed state when data loads
+  useEffect(() => {
+    if (groupedByTheme.length > 0 && !initialCollapseApplied) {
+      // Collapse all themes
+      const allThemeIds = new Set(groupedByTheme.map(({ theme }) => theme.id));
+      setCollapsedThemes(allThemeIds);
+
+      // Collapse all parents
+      const allParentIds = new Set(
+        relevantInitiatives
+          .filter((i) => !i.parentId)
+          .map((i) => i.id)
+      );
+      setCollapsedParents(allParentIds);
+      setInitialCollapseApplied(true);
+    }
+  }, [groupedByTheme, relevantInitiatives, initialCollapseApplied]);
+
+  // Expand/Collapse all functions
+  const expandAll = () => {
+    setCollapsedThemes(new Set());
+    setCollapsedParents(new Set());
+  };
+
+  const collapseAll = () => {
+    const allThemeIds = new Set(groupedByTheme.map(({ theme }) => theme.id));
+    setCollapsedThemes(allThemeIds);
+    const allParentIds = new Set(
+      relevantInitiatives
+        .filter((i) => !i.parentId)
+        .map((i) => i.id)
+    );
+    setCollapsedParents(allParentIds);
+  };
+
+  const isAllCollapsed = collapsedThemes.size === groupedByTheme.length;
 
   const toggleTheme = (themeId: string) => {
     setCollapsedThemes((prev) => {
@@ -210,28 +244,38 @@ export function TeamKanban() {
       transition={{ duration: 0.2 }}
     >
       {/* Header */}
-      <div className="border-b border-border bg-card px-6 py-4 flex items-center gap-4">
-        <Link
-          href="/"
-          className="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div>
-          <h1
-            className={cn(
-              'text-xl font-semibold flex items-center gap-2',
-              team.isPrimaryConstraint && 'text-destructive'
-            )}
+      <div className="border-b border-border bg-card px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            {team.name} Workload
-            {team.isPrimaryConstraint && <AlertTriangle className="h-5 w-5" />}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {relevantInitiatives.length} active items across{' '}
-            {groupedByTheme.length} themes
-          </p>
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1
+              className={cn(
+                'text-xl font-semibold flex items-center gap-2',
+                team.isPrimaryConstraint && 'text-destructive'
+              )}
+            >
+              {team.name} Workload
+              {team.isPrimaryConstraint && <AlertTriangle className="h-5 w-5" />}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {relevantInitiatives.length} active items across{' '}
+              {groupedByTheme.length} themes
+            </p>
+          </div>
         </div>
+        {/* Expand/Collapse All */}
+        <button
+          onClick={isAllCollapsed ? expandAll : collapseAll}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+        >
+          <ChevronsUpDown className="h-3.5 w-3.5" />
+          {isAllCollapsed ? 'Expand All' : 'Collapse All'}
+        </button>
       </div>
 
       {/* Matrix Table */}
