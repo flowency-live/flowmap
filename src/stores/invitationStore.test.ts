@@ -65,7 +65,7 @@ describe('invitationStore', () => {
       expect(mockFetch).toHaveBeenCalledWith('https://test-api.example.com/invitations');
       const state = useInvitationStore.getState();
       expect(state.invitations).toHaveLength(2);
-      expect(state.invitations[0].email).toBe('user1@example.com');
+      expect(state.invitations[0]!.email).toBe('user1@example.com');
     });
 
     it('sets isLoading during fetch', async () => {
@@ -128,7 +128,7 @@ describe('invitationStore', () => {
 
       const state = useInvitationStore.getState();
       expect(state.invitations).toHaveLength(1);
-      expect(state.invitations[0].email).toBe('newuser@example.com');
+      expect(state.invitations[0]!.email).toBe('newuser@example.com');
     });
   });
 
@@ -154,7 +154,7 @@ describe('invitationStore', () => {
           body: JSON.stringify({ status: 'revoked' }),
         })
       );
-      expect(useInvitationStore.getState().invitations[0].status).toBe('revoked');
+      expect(useInvitationStore.getState().invitations[0]!.status).toBe('revoked');
     });
   });
 
@@ -213,7 +213,7 @@ describe('invitationStore', () => {
           body: JSON.stringify({ status: 'accepted' }),
         })
       );
-      expect(useInvitationStore.getState().invitations[0].status).toBe('accepted');
+      expect(useInvitationStore.getState().invitations[0]!.status).toBe('accepted');
     });
   });
 });
