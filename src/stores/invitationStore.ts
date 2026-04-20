@@ -29,8 +29,10 @@ interface InvitationStore {
 // Get the invitation API URL from Amplify configuration
 function getInvitationApiUrl(): string {
   const config = Amplify.getConfig();
+  console.log('Amplify config:', JSON.stringify(config, null, 2));
   const url = (config as { custom?: { invitationApiUrl?: string } }).custom?.invitationApiUrl;
   if (!url) {
+    console.error('invitationApiUrl not found in config');
     throw new Error('Invitation API URL not configured');
   }
   return url;
@@ -112,10 +114,15 @@ export const useInvitationStore = create<InvitationStore>((set) => ({
   getInvitationByCode: async (code: string) => {
     try {
       const apiUrl = getInvitationApiUrl();
+      console.log('Fetching invitation from:', `${apiUrl}invitations/by-code?code=${code}`);
       const response = await fetch(`${apiUrl}invitations/by-code?code=${encodeURIComponent(code)}`);
-      if (!response.ok) return null;
+      if (!response.ok) {
+        console.error('Invitation fetch failed:', response.status);
+        return null;
+      }
       return await response.json();
-    } catch {
+    } catch (err) {
+      console.error('getInvitationByCode error:', err);
       return null;
     }
   },
