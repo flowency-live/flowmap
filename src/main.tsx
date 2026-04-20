@@ -26,7 +26,9 @@ async function init() {
   if (!rootElement) throw new Error('Root element not found');
 
   // Check if this is the invite route - render without AuthGate
-  const isInviteRoute = window.location.pathname === '/invite';
+  const pathname = window.location.pathname.replace(/\/$/, ''); // Remove trailing slash
+  const isInviteRoute = pathname === '/invite';
+  console.log('Route check:', { pathname, isInviteRoute, originalPathname: window.location.pathname });
 
   if (isInviteRoute) {
     createRoot(rootElement).render(
