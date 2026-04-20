@@ -1,6 +1,10 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
-import { FunctionUrlAuthType } from 'aws-cdk-lib/aws-lambda';
+import {
+  Function,
+  FunctionUrlAuthType,
+  HttpMethod,
+} from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { preSignUp } from './auth/pre-sign-up/resource';
@@ -35,26 +39,29 @@ invitationTable.addGlobalSecondaryIndex({
   partitionKey: { name: 'code', type: AttributeType.STRING },
 });
 
+// Cast lambdas to Function to access CDK methods
+const preSignUpFn = backend.preSignUp.resources.lambda as Function;
+const invitationApiFn = backend.invitationApi.resources.lambda as Function;
+
 // Grant preSignUp Lambda read access to validate invitation codes
-invitationTable.grantReadData(backend.preSignUp.resources.lambda);
-backend.preSignUp.resources.lambda.addEnvironment(
-  'INVITATION_TABLE_NAME',
-  invitationTable.tableName
-);
+invitationTable.grantReadData(preSignUpFn);
+preSignUpFn.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
 
 // Grant invitationApi Lambda full access for CRUD operations
-invitationTable.grantReadWriteData(backend.invitationApi.resources.lambda);
-backend.invitationApi.resources.lambda.addEnvironment(
-  'INVITATION_TABLE_NAME',
-  invitationTable.tableName
-);
+invitationTable.grantReadWriteData(invitationApiFn);
+invitationApiFn.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
 
 // Add Function URL for invitationApi (frontend access)
-const fnUrl = backend.invitationApi.resources.lambda.addFunctionUrl({
+const fnUrl = invitationApiFn.addFunctionUrl({
   authType: FunctionUrlAuthType.NONE, // We'll add Cognito auth at app layer
   cors: {
     allowedOrigins: ['*'],
-    allowedMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+    allowedMethods: [
+      HttpMethod.GET,
+      HttpMethod.POST,
+      HttpMethod.PATCH,
+      HttpMethod.OPTIONS,
+    ],
     allowedHeaders: ['Content-Type', 'Authorization'],
   },
 });
