@@ -1,8 +1,15 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { Function } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Duration } from 'aws-cdk-lib';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
-import { preSignUp } from './auth/pre-sign-up/resource';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * FlowMap Backend
@@ -16,12 +23,25 @@ import { preSignUp } from './auth/pre-sign-up/resource';
 const backend = defineBackend({
   auth,
   data,
-  preSignUp,
+});
+
+// Create pre-signup Lambda directly in root stack to avoid circular dependency
+// between auth and data nested stacks
+const preSignUpLambda = new NodejsFunction(backend.stack, 'PreSignUpLambda', {
+  entry: path.join(__dirname, 'auth/pre-sign-up/handler.ts'),
+  runtime: Runtime.NODEJS_20_X,
+  timeout: Duration.seconds(10),
+  memorySize: 128,
+  bundling: {
+    externalModules: ['@aws-sdk/*'],
+  },
 });
 
 // Grant pre-signup Lambda access to the Invitation table
 const invitationTable = backend.data.resources.tables['Invitation'];
-const preSignUpLambda = backend.preSignUp.resources.lambda as Function;
-
 invitationTable.grantReadData(preSignUpLambda);
 preSignUpLambda.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
+
+// Attach pre-signup trigger to Cognito User Pool
+const userPool = backend.auth.resources.userPool as cognito.UserPool;
+userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpLambda);
