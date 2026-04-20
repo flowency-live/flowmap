@@ -22,44 +22,112 @@ This document outlines the migration strategy for FlowMap from AWS Amplify Gen 2
 
 ## Phase 1: Microsoft 365 SSO Integration
 
-### 1.1 Azure Entra ID Setup
+### Responsibility Matrix
 
-**Prerequisites:**
-- Admin access to your organisation's Microsoft 365 tenant
-- Azure subscription linked to the same tenant
+| Task | Owner | Requires |
+|------|-------|----------|
+| Register app in Azure Entra ID | **CLIENT** | Global Admin or Application Admin role |
+| Configure redirect URIs | **CLIENT** | App registration access |
+| Grant API permissions | **CLIENT** | Admin consent for org |
+| Provide Client ID & Tenant ID | **CLIENT** | Copy from Azure Portal |
+| Integrate MSAL into codebase | **YOU** | Client ID & Tenant ID |
+| Build login UI components | **YOU** | MSAL integration complete |
+| Deploy updated app | **YOU** | AWS Amplify access |
+| Test SSO flow | **BOTH** | Deployed app + test user |
 
-**Steps:**
+---
 
-1. **Register Application in Azure Entra ID**
+### 1.1 CLIENT TASKS (O365 Owner)
+
+> **Send this section to your client** - they need to complete these steps in their Azure Portal.
+
+#### Step 1: Access Azure Portal
+
+1. Go to https://portal.azure.com
+2. Sign in with a Global Administrator or Application Administrator account
+3. Navigate to: **Azure Active Directory** > **App registrations**
+
+#### Step 2: Register the FlowMap Application
+
+1. Click **"+ New registration"**
+2. Fill in the form:
+   - **Name:** `FlowMap`
+   - **Supported account types:** Select **"Accounts in this organizational directory only"**
+   - **Redirect URI:**
+     - Platform: **Single-page application (SPA)**
+     - URI: `https://main.d1i0owfa4h2yjw.amplifyapp.com/auth/callback`
+3. Click **Register**
+
+#### Step 3: Add Additional Redirect URIs
+
+1. In the newly created app, go to **Authentication**
+2. Under "Single-page application" Redirect URIs, click **"Add URI"**
+3. Add these URIs:
    ```
-   Azure Portal > Azure Active Directory > App registrations > New registration
+   https://main.d1i0owfa4h2yjw.amplifyapp.com/auth/callback
+   http://localhost:5173/auth/callback
+   http://localhost:3000/auth/callback
    ```
-   - Name: "FlowMap"
-   - Supported account types: "Accounts in this organizational directory only"
-   - Redirect URI: `https://your-domain.com/auth/callback` (SPA type)
+4. Scroll down to **"Implicit grant and hybrid flows"**
+5. Check BOTH boxes:
+   - [x] Access tokens
+   - [x] ID tokens
+6. Click **Save**
 
-2. **Configure Authentication**
-   - Enable "Access tokens" and "ID tokens" under Implicit grant
-   - Add SPA redirect URIs for local dev: `http://localhost:5173/auth/callback`
+#### Step 4: Configure API Permissions
 
-3. **API Permissions**
-   - Microsoft Graph > User.Read (delegated) - for basic profile
-   - Microsoft Graph > email (delegated) - for email address
-   - Microsoft Graph > openid (delegated) - for OIDC
-   - Microsoft Graph > profile (delegated) - for display name
+1. Go to **API permissions** in the left sidebar
+2. Click **"+ Add a permission"**
+3. Select **Microsoft Graph** > **Delegated permissions**
+4. Search and add these permissions:
+   - `email`
+   - `openid`
+   - `profile`
+   - `User.Read`
+5. Click **"Grant admin consent for [Your Org]"** (blue button)
+6. Confirm by clicking **Yes**
 
-4. **Note Required Values**
-   - Application (client) ID
-   - Directory (tenant) ID
+#### Step 5: Send Values to Developer
 
-### 1.2 Frontend Integration with MSAL
+Go to **Overview** and copy these two values:
 
-**Install dependencies:**
+| Field | Example Value | Send to Developer |
+|-------|---------------|-------------------|
+| **Application (client) ID** | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` | Yes |
+| **Directory (tenant) ID** | `12345678-abcd-ef12-3456-7890abcdef12` | Yes |
+
+**Email template to send:**
+```
+Subject: FlowMap Azure SSO Configuration Complete
+
+Hi,
+
+I've registered FlowMap in our Azure Entra ID. Here are the values you need:
+
+Application (client) ID: [paste here]
+Directory (tenant) ID: [paste here]
+
+Admin consent has been granted for the required permissions.
+
+Thanks
+```
+
+---
+
+### 1.2 YOUR TASKS (Developer)
+
+> **Complete these after receiving Client ID and Tenant ID from client**
+
+#### Step 1: Install MSAL Dependencies
+
 ```bash
 npm install @azure/msal-browser @azure/msal-react
 ```
 
-**Configuration (`src/lib/authConfig.ts`):**
+#### Step 2: Create Auth Configuration
+
+Create `src/lib/msalConfig.ts`:
+
 ```typescript
 import { Configuration, PublicClientApplication } from '@azure/msal-browser';
 
@@ -68,6 +136,7 @@ export const msalConfig: Configuration = {
     clientId: import.meta.env.VITE_AZURE_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_TENANT_ID}`,
     redirectUri: window.location.origin + '/auth/callback',
+    postLogoutRedirectUri: window.location.origin,
   },
   cache: {
     cacheLocation: 'sessionStorage',
@@ -82,17 +151,267 @@ export const loginRequest = {
 export const msalInstance = new PublicClientApplication(msalConfig);
 ```
 
-**Wrap App with MsalProvider:**
-```typescript
-import { MsalProvider } from '@azure/msal-react';
-import { msalInstance } from './lib/authConfig';
+#### Step 3: Add Environment Variables
 
-<MsalProvider instance={msalInstance}>
-  <App />
-</MsalProvider>
+Add to `.env.local` (for local dev):
+```
+VITE_AZURE_CLIENT_ID=a1b2c3d4-e5f6-7890-abcd-ef1234567890
+VITE_AZURE_TENANT_ID=12345678-abcd-ef12-3456-7890abcdef12
 ```
 
-### 1.3 Auth Components
+Add to AWS Amplify Environment Variables:
+1. Go to AWS Amplify Console > FlowMap > Environment variables
+2. Add:
+   - `VITE_AZURE_CLIENT_ID` = [client ID from client]
+   - `VITE_AZURE_TENANT_ID` = [tenant ID from client]
+
+#### Step 4: Wrap App with MsalProvider
+
+Update `src/main.tsx`:
+
+```typescript
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { MsalProvider } from '@azure/msal-react';
+import { msalInstance } from './lib/msalConfig';
+import App from './App';
+import './index.css';
+
+// Initialize MSAL before rendering
+msalInstance.initialize().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <MsalProvider instance={msalInstance}>
+        <App />
+      </MsalProvider>
+    </StrictMode>
+  );
+});
+```
+
+#### Step 5: Create Auth Gate Component
+
+Create `src/components/MicrosoftAuthGate.tsx`:
+
+```typescript
+import { useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { InteractionStatus } from '@azure/msal-browser';
+import { loginRequest } from '@/lib/msalConfig';
+
+interface MicrosoftAuthGateProps {
+  children: React.ReactNode;
+}
+
+export function MicrosoftAuthGate({ children }: MicrosoftAuthGateProps) {
+  const isAuthenticated = useIsAuthenticated();
+  const { instance, inProgress } = useMsal();
+
+  // Show loading while MSAL is working
+  if (inProgress !== InteractionStatus.None) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+          <p className="text-muted-foreground">Signing in...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-6 p-8">
+          <h1 className="text-3xl font-bold">FlowMap</h1>
+          <p className="text-muted-foreground">
+            Sign in with your organisation account to continue
+          </p>
+          <button
+            onClick={() => instance.loginRedirect(loginRequest)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#0078d4] text-white rounded-md hover:bg-[#106ebe] transition-colors"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 21 21" fill="currentColor">
+              <path d="M0 0h10v10H0V0zm11 0h10v10H11V0zM0 11h10v10H0V11zm11 0h10v10H11V11z"/>
+            </svg>
+            Sign in with Microsoft
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+```
+
+#### Step 6: Update App.tsx
+
+Replace the existing AuthGate with MicrosoftAuthGate:
+
+```typescript
+import { MicrosoftAuthGate } from '@/components/MicrosoftAuthGate';
+
+function App() {
+  return (
+    <MicrosoftAuthGate>
+      {/* existing app content */}
+    </MicrosoftAuthGate>
+  );
+}
+```
+
+#### Step 7: Add Auth Callback Route
+
+Update your router to handle the callback (the redirect URI):
+
+```typescript
+// In your router configuration
+{
+  path: '/auth/callback',
+  element: <AuthCallback />,
+}
+
+// AuthCallback component (simple redirect after login)
+function AuthCallback() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // MSAL handles the token extraction automatically
+    // Just redirect to home after a brief delay
+    navigate('/', { replace: true });
+  }, [navigate]);
+
+  return <div>Completing sign in...</div>;
+}
+```
+
+#### Step 8: Get User Info
+
+To display the logged-in user:
+
+```typescript
+import { useMsal } from '@azure/msal-react';
+
+function UserProfile() {
+  const { accounts } = useMsal();
+  const account = accounts[0];
+
+  if (!account) return null;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm">{account.name}</span>
+      <span className="text-xs text-muted-foreground">{account.username}</span>
+    </div>
+  );
+}
+```
+
+#### Step 9: Add Logout
+
+```typescript
+import { useMsal } from '@azure/msal-react';
+
+function LogoutButton() {
+  const { instance } = useMsal();
+
+  return (
+    <button onClick={() => instance.logoutRedirect()}>
+      Sign out
+    </button>
+  );
+}
+```
+
+#### Step 10: Deploy and Test
+
+1. Commit and push changes
+2. Amplify will auto-deploy
+3. Test the SSO flow:
+   - Visit the app
+   - Click "Sign in with Microsoft"
+   - Authenticate with an account from the client's O365
+   - Verify redirect back to app with user logged in
+
+---
+
+### 1.3 JOINT TESTING CHECKLIST
+
+| Test | Expected Result | Pass? |
+|------|-----------------|-------|
+| Click "Sign in with Microsoft" | Redirects to Microsoft login | [ ] |
+| Enter valid org credentials | Authenticates successfully | [ ] |
+| After login | Redirects back to FlowMap | [ ] |
+| User name displayed | Shows correct Microsoft account name | [ ] |
+| Refresh page | Stays logged in (session persists) | [ ] |
+| Click Sign out | Logs out and shows login screen | [ ] |
+| Try personal Microsoft account | Should be rejected (org-only) | [ ] |
+
+---
+
+### 1.4 Migration from Magic Link
+
+Once Microsoft SSO is working:
+
+**Remove (YOUR TASK):**
+- [ ] Delete `amplify/functions/validate-token/` directory
+- [ ] Remove magic link Lambda from `amplify/backend.ts`
+- [ ] Delete `src/lib/auth.ts` (magic link functions)
+- [ ] Delete `src/components/AuthGate.tsx` (old auth gate)
+- [ ] Remove SSM parameter `/flowmap/auth/jwt-secret`
+
+**Keep:**
+- AWS Amplify hosting (until Phase 2 Azure migration)
+- DynamoDB and AppSync (until Phase 2)
+
+---
+
+### 1.5 Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "AADSTS50011: Reply URL mismatch" | Redirect URI not registered | Client needs to add exact URI to app registration |
+| "AADSTS700016: Application not found" | Wrong Client ID | Verify VITE_AZURE_CLIENT_ID matches app registration |
+| "AADSTS90002: Tenant not found" | Wrong Tenant ID | Verify VITE_AZURE_TENANT_ID matches directory |
+| "Consent required" error | Admin consent not granted | Client needs to click "Grant admin consent" |
+| Login works but no user info | Missing API permissions | Client needs to add User.Read permission |
+| Can log in with personal account | Wrong account type setting | Client needs to set "Accounts in this organizational directory only" |
+
+---
+
+### 1.6 Timeline Summary
+
+| Day | Task | Owner |
+|-----|------|-------|
+| Day 1 | Send client instructions (section 1.1) | You |
+| Day 1-2 | Client registers app, sends back IDs | Client |
+| Day 2-3 | Implement MSAL integration (section 1.2) | You |
+| Day 3 | Deploy to Amplify | You |
+| Day 3-4 | Joint testing | Both |
+| Day 4 | Remove magic link code | You |
+
+**Total: ~4 working days**
+
+---
+
+### 1.7 What You're Waiting For
+
+Before you can start coding, you need from the client:
+
+```
+[ ] Application (client) ID
+[ ] Directory (tenant) ID
+[ ] Confirmation that admin consent was granted
+```
+
+**Send the client section 1.1 now** and start on section 1.2 as soon as you receive the IDs.
+
+---
+
+### 1.8 DEPRECATED: Previous Auth Components
+
+The following were part of the generic instructions and are now replaced by the specific implementation above:
 
 **Login Button:**
 ```typescript
