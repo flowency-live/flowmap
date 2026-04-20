@@ -12,15 +12,87 @@ This document outlines the migration strategy for FlowMap from AWS Amplify Gen 2
 |-----------|-------------|---------|
 | Frontend Hosting | Amplify Hosting | React SPA deployment |
 | Database | DynamoDB | Initiative, Team, Theme, Dependency storage |
+| Database | DynamoDB (Invitations) | Invitation codes with GSI for code lookup |
 | API | AppSync (GraphQL) | Data queries, mutations, subscriptions |
 | Real-time | AppSync Subscriptions | Live updates across clients |
-| Auth | Magic Link (Lambda) | Token validation via Lambda function URL |
-| Serverless | Lambda | validate-token function |
+| Auth | Cognito User Pool | Email-based signup with invitation validation |
+| Auth Trigger | Lambda (pre-signup) | Validates invitation code before allowing signup |
+| Invitation API | Lambda + Function URL | CRUD operations for invitation management |
 | Infrastructure | CDK (via Amplify) | IaC through Amplify Gen 2 |
+
+### Current Auth Flow (Invitation-Based)
+
+```
+1. Admin creates invitation → POST /invitations → DynamoDB (status: pending)
+2. User receives invite link with code
+3. User signs up with email + invitation code
+4. Pre-signup Lambda validates:
+   - Code exists in DynamoDB
+   - Email matches invitation
+   - Status is 'pending' (not used/revoked)
+5. If valid → Cognito creates user, auto-confirms email
+6. Invitation marked as 'accepted'
+```
+
+**Key Point:** Users cannot self-register. Access is controlled via invitation codes.
 
 ---
 
 ## Phase 1: Microsoft 365 SSO Integration
+
+### DECISION REQUIRED: Invitation System
+
+The current system uses **invitation-based access control** - users cannot self-register. They must have a valid invitation code.
+
+With Microsoft 365 SSO, you have three options:
+
+| Option | Access Control | Complexity | Recommendation |
+|--------|---------------|------------|----------------|
+| **A: Org-wide access** | Anyone in the O365 tenant can access | Simple | Best if all org members should have access |
+| **B: Keep invitation system** | Invitation required + must be in O365 | Medium | Best for controlled rollout |
+| **C: Azure Entra ID Groups** | Only members of specific AD group | Simple | Best for department/team-based access |
+
+#### Option A: Org-Wide Access (Simplest)
+
+- Any user in the client's Microsoft 365 can sign in
+- No invitation system needed
+- **Remove:** Invitation table, invitation API, pre-signup trigger
+- **Pros:** Simple, no invitation management overhead
+- **Cons:** No granular access control
+
+#### Option B: Keep Invitation System (Current Behaviour)
+
+- User must have both: valid invitation AND be in O365 org
+- Migrate invitation table to Azure (Cosmos DB or Azure SQL)
+- Migrate invitation API to Azure Functions
+- **Pros:** Fine-grained control, familiar workflow
+- **Cons:** More migration work, two systems to maintain
+
+#### Option C: Azure Entra ID Groups (Recommended)
+
+- Create a security group in Azure AD (e.g., "FlowMap Users")
+- Only group members can access the app
+- Client adds/removes users via Azure AD group membership
+- **Pros:** Native Azure access control, no custom code needed
+- **Cons:** Client manages access in Azure AD instead of FlowMap UI
+
+**Instructions for each option are provided below. Choose before proceeding.**
+
+---
+
+### If Option A (Org-Wide Access)
+
+Skip the invitation system entirely. Follow sections 1.1-1.8 as written.
+
+### If Option B (Keep Invitation System)
+
+Follow sections 1.1-1.8, then also complete **Section 1.9: Invitation System Migration**.
+
+### If Option C (Azure AD Groups)
+
+Follow sections 1.1-1.8, then also complete **Section 1.10: Azure AD Group-Based Access**.
+
+---
 
 ### Responsibility Matrix
 
@@ -445,19 +517,336 @@ function ProtectedRoute({ children }) {
 }
 ```
 
-### 1.4 Migration from Magic Link
+### 1.9 INVITATION SYSTEM MIGRATION (Option B Only)
 
-| Current (Magic Link) | New (Microsoft SSO) |
-|---------------------|---------------------|
-| Lambda validate-token | Azure Entra ID token validation |
-| Custom JWT | Microsoft ID tokens |
-| Email-based auth | Microsoft 365 account |
-| SSM parameter storage | Azure Entra ID handles secrets |
+> Only complete this section if you chose **Option B: Keep Invitation System**
 
-**Decommission:**
-- Remove `amplify/functions/validate-token/`
-- Remove magic link email sending
-- Remove token validation Lambda
+#### Current AWS Components to Migrate
+
+| AWS Component | Azure Equivalent |
+|---------------|------------------|
+| DynamoDB (Invitations table) | Azure Cosmos DB or Azure Table Storage |
+| Lambda (invitation-api) | Azure Functions |
+| Lambda (pre-signup trigger) | Custom middleware in app |
+| Function URL | Azure Functions HTTP trigger |
+
+#### Step 1: Create Invitation Table in Cosmos DB
+
+```javascript
+// Database: flowmap
+// Container: invitations
+// Partition key: /id
+
+// Document structure (same as DynamoDB):
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "code": "uuid",
+  "status": "pending" | "accepted" | "revoked",
+  "invitedBy": "admin",
+  "invitedAt": "2026-04-20T12:00:00Z",
+  "acceptedAt": "2026-04-21T09:00:00Z"
+}
+
+// Add unique index on 'code' field for lookups
+```
+
+#### Step 2: Create Azure Function for Invitation API
+
+Create `azure-functions/src/functions/invitations.ts`:
+
+```typescript
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { CosmosClient } from '@azure/cosmos';
+
+const cosmosClient = new CosmosClient(process.env.COSMOS_CONNECTION_STRING!);
+const container = cosmosClient.database('flowmap').container('invitations');
+
+// GET /api/invitations - List all
+app.http('listInvitations', {
+  methods: ['GET'],
+  route: 'invitations',
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    const { resources } = await container.items.query('SELECT * FROM c').fetchAll();
+    return { jsonBody: resources };
+  },
+});
+
+// POST /api/invitations - Create
+app.http('createInvitation', {
+  methods: ['POST'],
+  route: 'invitations',
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    const body = await request.json() as { email: string; invitedBy?: string };
+
+    const invitation = {
+      id: crypto.randomUUID(),
+      email: body.email,
+      code: crypto.randomUUID(),
+      status: 'pending',
+      invitedBy: body.invitedBy || 'admin',
+      invitedAt: new Date().toISOString(),
+    };
+
+    await container.items.create(invitation);
+    return { status: 201, jsonBody: invitation };
+  },
+});
+
+// GET /api/invitations/by-code?code=xxx - Validate code
+app.http('getInvitationByCode', {
+  methods: ['GET'],
+  route: 'invitations/by-code',
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    const code = request.query.get('code');
+    if (!code) {
+      return { status: 400, jsonBody: { error: 'Missing code parameter' } };
+    }
+
+    const { resources } = await container.items
+      .query({ query: 'SELECT * FROM c WHERE c.code = @code', parameters: [{ name: '@code', value: code }] })
+      .fetchAll();
+
+    if (resources.length === 0) {
+      return { status: 404, jsonBody: { error: 'Invitation not found' } };
+    }
+
+    return { jsonBody: resources[0] };
+  },
+});
+```
+
+#### Step 3: Validate Invitation After Microsoft Login
+
+Since Azure Entra ID doesn't have pre-signup triggers like Cognito, validate the invitation **after** the user logs in:
+
+```typescript
+// In MicrosoftAuthGate.tsx - add invitation validation
+
+import { useMsal } from '@azure/msal-react';
+import { useState, useEffect } from 'react';
+
+export function MicrosoftAuthGate({ children }: { children: React.ReactNode }) {
+  const { accounts } = useMsal();
+  const isAuthenticated = accounts.length > 0;
+  const [hasValidInvitation, setHasValidInvitation] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated && accounts[0]) {
+      // Check if user has a valid (accepted) invitation
+      validateUserInvitation(accounts[0].username)
+        .then(setHasValidInvitation);
+    }
+  }, [isAuthenticated, accounts]);
+
+  if (isAuthenticated && hasValidInvitation === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Access Denied</h1>
+          <p className="text-muted-foreground">
+            You don't have an invitation to FlowMap.
+            <br />
+            Please contact your administrator.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ... rest of auth gate
+}
+
+async function validateUserInvitation(email: string): Promise<boolean> {
+  const response = await fetch(`/api/invitations/by-email?email=${encodeURIComponent(email)}`);
+  if (!response.ok) return false;
+
+  const invitation = await response.json();
+  return invitation.status === 'accepted' || invitation.status === 'pending';
+}
+```
+
+#### Step 4: Auto-Accept Invitation on First Login
+
+```typescript
+// After successful Microsoft login, mark invitation as accepted
+async function acceptInvitationOnFirstLogin(email: string) {
+  const response = await fetch(`/api/invitations/by-email?email=${encodeURIComponent(email)}`);
+  if (!response.ok) return;
+
+  const invitation = await response.json();
+  if (invitation.status === 'pending') {
+    await fetch(`/api/invitations/${invitation.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'accepted' }),
+    });
+  }
+}
+```
+
+#### Invitation Flow Comparison
+
+| Step | AWS (Current) | Azure (Migrated) |
+|------|---------------|------------------|
+| 1. Create invitation | POST to Lambda Function URL | POST to Azure Function |
+| 2. User clicks invite link | Goes to signup page | Goes to Microsoft login |
+| 3. Validate invitation | Cognito pre-signup trigger | After-login check in React |
+| 4. Create user | Cognito creates user | Azure Entra ID (already exists) |
+| 5. Mark as accepted | Pre-signup trigger updates DynamoDB | React calls Azure Function |
+
+---
+
+### 1.10 AZURE AD GROUP-BASED ACCESS (Option C Only)
+
+> Only complete this section if you chose **Option C: Azure Entra ID Groups**
+
+#### CLIENT TASKS
+
+**Step 1: Create Security Group**
+
+1. Go to Azure Portal > Azure Active Directory > Groups
+2. Click **"+ New group"**
+3. Fill in:
+   - Group type: **Security**
+   - Group name: `FlowMap Users`
+   - Group description: "Users with access to FlowMap application"
+   - Membership type: **Assigned**
+4. Click **Create**
+5. Note the **Object ID** of the group
+
+**Step 2: Assign Group to App**
+
+1. Go to Azure Portal > Enterprise applications > FlowMap
+2. Click **Users and groups** in the left sidebar
+3. Click **"+ Add user/group"**
+4. Select the "FlowMap Users" group
+5. Click **Assign**
+
+**Step 3: Enable Group Claims**
+
+1. Go to Azure Portal > App registrations > FlowMap
+2. Click **Token configuration**
+3. Click **"+ Add groups claim"**
+4. Select **Security groups**
+5. Under "ID" token, check **Group ID**
+6. Click **Add**
+
+**Step 4: Send Group ID to Developer**
+
+Send the developer:
+- Group Object ID: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
+
+#### YOUR TASKS (Developer)
+
+**Step 1: Add Group Validation**
+
+Update `src/components/MicrosoftAuthGate.tsx`:
+
+```typescript
+import { useMsal } from '@azure/msal-react';
+import { InteractionStatus } from '@azure/msal-browser';
+
+const ALLOWED_GROUP_ID = import.meta.env.VITE_AZURE_ALLOWED_GROUP_ID;
+
+export function MicrosoftAuthGate({ children }: { children: React.ReactNode }) {
+  const { accounts, instance, inProgress } = useMsal();
+  const account = accounts[0];
+
+  // Get the ID token claims which include group memberships
+  const groups = account?.idTokenClaims?.groups as string[] | undefined;
+  const hasAccess = groups?.includes(ALLOWED_GROUP_ID) ?? false;
+
+  if (inProgress !== InteractionStatus.None) {
+    return <LoadingSpinner />;
+  }
+
+  if (!account) {
+    return <LoginScreen />;
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Access Denied</h1>
+          <p className="text-muted-foreground">
+            You are not a member of the FlowMap Users group.
+            <br />
+            Please contact your administrator to request access.
+          </p>
+          <button
+            onClick={() => instance.logoutRedirect()}
+            className="text-sm text-primary hover:underline"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+```
+
+**Step 2: Add Environment Variable**
+
+Add to `.env.local` and Amplify environment variables:
+```
+VITE_AZURE_ALLOWED_GROUP_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+**Step 3: Handle Large Group Memberships (>200 groups)**
+
+If users might be in more than 200 groups, the groups won't be in the token. You'll need to call Microsoft Graph:
+
+```typescript
+import { useMsal } from '@azure/msal-react';
+
+async function checkGroupMembership(groupId: string): Promise<boolean> {
+  const { instance, accounts } = useMsal();
+
+  const response = await instance.acquireTokenSilent({
+    scopes: ['GroupMember.Read.All'],
+    account: accounts[0],
+  });
+
+  const graphResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/me/memberOf/${groupId}`,
+    {
+      headers: { Authorization: `Bearer ${response.accessToken}` },
+    }
+  );
+
+  return graphResponse.ok;
+}
+```
+
+**Note:** This requires additional API permission: `GroupMember.Read.All` (delegated). The client must grant admin consent.
+
+---
+
+### 1.11 Migration Summary: What to Remove
+
+Once Microsoft SSO is working:
+
+**Option A (Org-Wide) - Remove everything:**
+- [ ] `amplify/auth/` - Cognito auth
+- [ ] `amplify/functions/invitation-api/` - Invitation management
+- [ ] DynamoDB Invitations table
+- [ ] All invitation-related frontend code
+
+**Option B (Keep Invitations) - Remove Cognito only:**
+- [ ] `amplify/auth/` - Cognito auth (replaced by Azure Entra ID)
+- [ ] Keep invitation logic, migrate to Azure Functions + Cosmos DB
+
+**Option C (AD Groups) - Remove everything:**
+- [ ] `amplify/auth/` - Cognito auth
+- [ ] `amplify/functions/invitation-api/` - Invitation management
+- [ ] DynamoDB Invitations table
+- [ ] All invitation-related frontend code
+- [ ] Client manages access via Azure AD group membership
 
 ---
 
