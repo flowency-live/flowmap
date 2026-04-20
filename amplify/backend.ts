@@ -37,7 +37,7 @@ const functionUrl = validateTokenLambda.addFunctionUrl({
   cors: {
     allowedOrigins: ['*'],
     allowedHeaders: ['content-type'],
-    allowedMethods: [HttpMethod.POST, HttpMethod.OPTIONS],
+    allowedMethods: [HttpMethod.POST],
   },
 });
 
