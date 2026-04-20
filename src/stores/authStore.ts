@@ -79,8 +79,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signUpWithInvite: async (
     email: string,
     password: string,
-    inviteCode: string
+    _inviteCode: string
   ) => {
+    // Note: inviteCode is validated client-side before signup and used
+    // to mark the invitation as accepted after signup succeeds.
+    // We don't store it in Cognito - the invitation table tracks usage.
     set({ isLoading: true, error: null });
     try {
       await signUp({
@@ -89,7 +92,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         options: {
           userAttributes: {
             email,
-            'custom:inviteCode': inviteCode,
           },
         },
       });
