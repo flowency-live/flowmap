@@ -195,6 +195,15 @@ export function Heatmap() {
     );
   }, [parentInitiatives, filteredInitiatives]);
 
+  // Start collapsed on initial load
+  const hasInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!hasInitializedRef.current && parentsWithChildren.size > 0) {
+      setCollapsedInitiatives(new Set(parentsWithChildren));
+      hasInitializedRef.current = true;
+    }
+  }, [parentsWithChildren]);
+
   const toggleInitiative = (initId: string) => {
     setCollapsedInitiatives((prev) => {
       const next = new Set(prev);
