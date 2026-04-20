@@ -3,26 +3,14 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock crypto.randomUUID
-const mockUUID = 'test-uuid-1234-5678';
-vi.stubGlobal('crypto', {
-  randomUUID: () => mockUUID,
-});
-
-// Mock the Amplify client
-const mockList = vi.fn();
-const mockCreate = vi.fn();
-const mockUpdate = vi.fn();
-
-vi.mock('@/lib/amplifyClient', () => ({
-  client: {
-    models: {
-      Invitation: {
-        list: (params?: unknown) => mockList(params),
-        create: (data: unknown) => mockCreate(data),
-        update: (data: unknown) => mockUpdate(data),
+// Mock Amplify.getConfig
+vi.mock('aws-amplify', () => ({
+  Amplify: {
+    getConfig: () => ({
+      custom: {
+        invitationApiUrl: 'https://test-api.example.com/',
       },
-    },
+    }),
   },
 }));
 
@@ -42,6 +30,10 @@ vi.mock('@/stores/authStore', () => ({
     }),
   },
 }));
+
+// Mock fetch
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 // Import after mocks
 const { useInvitationStore } = await import('./invitationStore');
@@ -63,20 +55,26 @@ describe('invitationStore', () => {
         { id: '1', email: 'user1@example.com', code: 'code1', status: 'pending' },
         { id: '2', email: 'user2@example.com', code: 'code2', status: 'accepted' },
       ];
-      mockList.mockResolvedValueOnce({ data: mockInvitations });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockInvitations),
+      });
 
       await useInvitationStore.getState().loadInvitations();
 
+      expect(mockFetch).toHaveBeenCalledWith('https://test-api.example.com/invitations');
       const state = useInvitationStore.getState();
       expect(state.invitations).toHaveLength(2);
       expect(state.invitations[0].email).toBe('user1@example.com');
     });
 
     it('sets isLoading during fetch', async () => {
-      mockList.mockImplementationOnce(() => {
-        // Check state during the call
+      mockFetch.mockImplementationOnce(() => {
         expect(useInvitationStore.getState().isLoading).toBe(true);
-        return Promise.resolve({ data: [] });
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
       });
 
       await useInvitationStore.getState().loadInvitations();
@@ -86,37 +84,44 @@ describe('invitationStore', () => {
   });
 
   describe('createInvitation', () => {
-    it('generates unique code and creates invitation', async () => {
-      mockCreate.mockResolvedValueOnce({
-        data: {
-          id: 'inv-1',
-          email: 'newuser@example.com',
-          code: mockUUID,
-          status: 'pending',
-        },
+    it('creates invitation via API', async () => {
+      const mockInvitation = {
+        id: 'inv-1',
+        email: 'newuser@example.com',
+        code: 'generated-code-123',
+        status: 'pending',
+      };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockInvitation),
       });
 
       const inviteUrl = await useInvitationStore.getState().createInvitation('newuser@example.com');
 
-      expect(mockCreate).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://test-api.example.com/invitations',
         expect.objectContaining({
-          email: 'newuser@example.com',
-          code: mockUUID,
-          status: 'pending',
-          invitedBy: 'admin-user-123',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'newuser@example.com',
+            invitedBy: 'admin-user-123',
+          }),
         })
       );
-      expect(inviteUrl).toContain(mockUUID);
+      expect(inviteUrl).toContain('generated-code-123');
     });
 
     it('adds new invitation to store', async () => {
-      mockCreate.mockResolvedValueOnce({
-        data: {
-          id: 'inv-1',
-          email: 'newuser@example.com',
-          code: mockUUID,
-          status: 'pending',
-        },
+      const mockInvitation = {
+        id: 'inv-1',
+        email: 'newuser@example.com',
+        code: 'generated-code-123',
+        status: 'pending',
+      };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockInvitation),
       });
 
       await useInvitationStore.getState().createInvitation('newuser@example.com');
@@ -131,20 +136,24 @@ describe('invitationStore', () => {
     it('updates invitation status to revoked', async () => {
       useInvitationStore.setState({
         invitations: [
-          { id: 'inv-1', email: 'user@example.com', code: 'code1', status: 'pending' as const, invitedBy: 'admin', invitedAt: new Date().toISOString() },
+          { id: 'inv-1', email: 'user@example.com', code: 'code1', status: 'pending' as const },
         ],
       });
 
-      mockUpdate.mockResolvedValueOnce({
-        data: { id: 'inv-1', status: 'revoked' },
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'inv-1', status: 'revoked' }),
       });
 
       await useInvitationStore.getState().revokeInvitation('inv-1');
 
-      expect(mockUpdate).toHaveBeenCalledWith({
-        id: 'inv-1',
-        status: 'revoked',
-      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://test-api.example.com/invitations/inv-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'revoked' }),
+        })
+      );
       expect(useInvitationStore.getState().invitations[0].status).toBe('revoked');
     });
   });
@@ -157,15 +166,24 @@ describe('invitationStore', () => {
         code: 'test-code',
         status: 'pending',
       };
-      mockList.mockResolvedValueOnce({ data: [mockInvitation] });
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockInvitation),
+      });
 
       const found = await useInvitationStore.getState().getInvitationByCode('test-code');
 
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://test-api.example.com/invitations/by-code?code=test-code'
+      );
       expect(found).toEqual(mockInvitation);
     });
 
     it('returns null when not found', async () => {
-      mockList.mockResolvedValueOnce({ data: [] });
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      });
 
       const found = await useInvitationStore.getState().getInvitationByCode('nonexistent');
 
@@ -177,22 +195,25 @@ describe('invitationStore', () => {
     it('updates invitation status to accepted', async () => {
       useInvitationStore.setState({
         invitations: [
-          { id: 'inv-1', email: 'user@example.com', code: 'code1', status: 'pending' as const, invitedBy: 'admin', invitedAt: new Date().toISOString() },
+          { id: 'inv-1', email: 'user@example.com', code: 'code1', status: 'pending' as const },
         ],
       });
 
-      mockUpdate.mockResolvedValueOnce({
-        data: { id: 'inv-1', status: 'accepted' },
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'inv-1', status: 'accepted' }),
       });
 
       await useInvitationStore.getState().markInvitationAccepted('inv-1');
 
-      expect(mockUpdate).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://test-api.example.com/invitations/inv-1',
         expect.objectContaining({
-          id: 'inv-1',
-          status: 'accepted',
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'accepted' }),
         })
       );
+      expect(useInvitationStore.getState().invitations[0].status).toBe('accepted');
     });
   });
 });

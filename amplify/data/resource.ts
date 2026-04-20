@@ -7,7 +7,9 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
  * - Theme: Portfolio groupings (e.g., "M&S Onboarding", "NatWest Onboarding")
  * - Team: Delivery teams (UPJ, UIE, UNC, Logan, DataE, DataS)
  * - Initiative: Work items with team-specific flow states
- * - Invitation: Single-use invite links for user onboarding
+ *
+ * Note: Invitation model is managed separately (standalone DynamoDB table + Lambda)
+ * to avoid circular dependencies between auth and data stacks.
  *
  * Flow States: N/A | N/S | Discovery | Ready | Constrained | Doing | Done | Blocked
  *
@@ -15,32 +17,6 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
  * Authorization: Cognito User Pool (authenticated users only)
  */
 const schema = a.schema({
-  /**
-   * Invitation - Single-use invite links for user onboarding
-   *
-   * Flow:
-   * 1. Admin creates invitation with email
-   * 2. System generates unique code (UUID)
-   * 3. Admin shares link: /invite?code={code}
-   * 4. User visits link, pre-fills email, sets password
-   * 5. Cognito pre-signup trigger validates invitation
-   * 6. On successful signup, invitation status → 'accepted'
-   */
-  Invitation: a
-    .model({
-      email: a.email().required(),
-      code: a.string().required(),
-      status: a.enum(['pending', 'accepted', 'revoked']),
-      invitedBy: a.string(),
-      invitedAt: a.datetime(),
-      acceptedAt: a.datetime(),
-    })
-    .authorization((allow) => [allow.authenticated()])
-    .secondaryIndexes((index) => [
-      index('code').name('byCode'),
-      index('email').name('byEmail'),
-    ]),
-
   /**
    * Theme - Portfolio grouping for initiatives (brand)
    */

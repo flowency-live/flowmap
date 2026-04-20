@@ -1,47 +1,67 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { Runtime } from 'aws-cdk-lib/aws-lambda';
-import { Duration } from 'aws-cdk-lib';
-import * as cognito from 'aws-cdk-lib/aws-cognito';
+import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
+import { FunctionUrlAuthType } from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { preSignUp } from './auth/pre-sign-up/resource';
+import { invitationApi } from './functions/invitation-api/resource';
 
 /**
  * FlowMap Backend
  *
- * This defines the Amplify Gen 2 backend with:
- * - Cognito User Pool authentication (with invitation-based signup)
- * - AppSync GraphQL API
- * - DynamoDB tables (auto-created from schema)
- * - Real-time subscriptions (auto-enabled)
+ * Architecture note: Invitations are managed via a standalone DynamoDB table
+ * and Lambda API, NOT through AppSync. This avoids the circular dependency
+ * between auth (pre-signup trigger) and data (userPool authorization).
+ *
+ * The invitation table is created in the ROOT stack, which both preSignUp
+ * and invitationApi reference. This breaks the circular dependency chain.
  */
 const backend = defineBackend({
   auth,
   data,
+  preSignUp,
+  invitationApi,
 });
 
-// Create pre-signup Lambda directly in root stack to avoid circular dependency
-// between auth and data nested stacks
-const preSignUpLambda = new NodejsFunction(backend.stack, 'PreSignUpLambda', {
-  entry: path.join(__dirname, 'auth/pre-sign-up/handler.ts'),
-  runtime: Runtime.NODEJS_20_X,
-  timeout: Duration.seconds(10),
-  memorySize: 128,
-  bundling: {
-    externalModules: ['@aws-sdk/*'],
+// Create invitation table in ROOT stack to avoid circular dependencies
+const invitationTable = new Table(backend.stack, 'InvitationTable', {
+  partitionKey: { name: 'id', type: AttributeType.STRING },
+  billingMode: BillingMode.PAY_PER_REQUEST,
+});
+
+// Add GSI for querying by code (for pre-signup validation)
+invitationTable.addGlobalSecondaryIndex({
+  indexName: 'byCode',
+  partitionKey: { name: 'code', type: AttributeType.STRING },
+});
+
+// Grant preSignUp Lambda read access to validate invitation codes
+invitationTable.grantReadData(backend.preSignUp.resources.lambda);
+backend.preSignUp.resources.lambda.addEnvironment(
+  'INVITATION_TABLE_NAME',
+  invitationTable.tableName
+);
+
+// Grant invitationApi Lambda full access for CRUD operations
+invitationTable.grantReadWriteData(backend.invitationApi.resources.lambda);
+backend.invitationApi.resources.lambda.addEnvironment(
+  'INVITATION_TABLE_NAME',
+  invitationTable.tableName
+);
+
+// Add Function URL for invitationApi (frontend access)
+const fnUrl = backend.invitationApi.resources.lambda.addFunctionUrl({
+  authType: FunctionUrlAuthType.NONE, // We'll add Cognito auth at app layer
+  cors: {
+    allowedOrigins: ['*'],
+    allowedMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
 });
 
-// Grant pre-signup Lambda access to the Invitation table
-const invitationTable = backend.data.resources.tables['Invitation'];
-invitationTable.grantReadData(preSignUpLambda);
-preSignUpLambda.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
-
-// Attach pre-signup trigger to Cognito User Pool
-const userPool = backend.auth.resources.userPool as cognito.UserPool;
-userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpLambda);
+// Export the function URL for frontend configuration
+backend.addOutput({
+  custom: {
+    invitationApiUrl: fnUrl.url,
+  },
+});

@@ -180,29 +180,40 @@ async function seedBootstrapAdmin() {
   console.log('Creating bootstrap admin invitation...');
 
   const bootstrapEmail = 'jason.jones@uinsure.co.uk';
-  const bootstrapCode = 'bootstrap-admin';
+
+  // Get invitation API URL from outputs
+  const invitationApiUrl = (outputs as { custom?: { invitationApiUrl?: string } }).custom?.invitationApiUrl;
+  if (!invitationApiUrl) {
+    console.log('  Invitation API not yet deployed - skipping bootstrap invitation');
+    console.log('  Run seed again after deployment to create the bootstrap invitation');
+    return;
+  }
 
   // Check if invitation already exists
-  const { data: existing } = await client.models.Invitation.list({
-    filter: { email: { eq: bootstrapEmail } },
-  });
+  const listResponse = await fetch(`${invitationApiUrl}invitations`);
+  const invitations = await listResponse.json() as { email: string }[];
 
-  if (existing && existing.length > 0) {
+  if (invitations.some(inv => inv.email === bootstrapEmail)) {
     console.log(`  Bootstrap invitation already exists for ${bootstrapEmail}`);
     return;
   }
 
-  const { data } = await client.models.Invitation.create({
-    email: bootstrapEmail,
-    code: bootstrapCode,
-    status: 'pending',
-    invitedBy: 'system',
-    invitedAt: new Date().toISOString(),
+  // Create the invitation
+  const createResponse = await fetch(`${invitationApiUrl}invitations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: bootstrapEmail,
+      invitedBy: 'system',
+    }),
   });
 
-  if (data) {
+  if (createResponse.ok) {
+    const invitation = await createResponse.json() as { code: string };
     console.log(`  Created bootstrap invitation for: ${bootstrapEmail}`);
-    console.log(`  Invite code: ${bootstrapCode}`);
+    console.log(`  Invite URL: /invite?code=${invitation.code}`);
+  } else {
+    console.error('  Failed to create bootstrap invitation');
   }
 }
 

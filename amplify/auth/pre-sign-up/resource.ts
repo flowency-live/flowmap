@@ -6,5 +6,4 @@ export const preSignUp = defineFunction({
   runtime: 20,
   timeoutSeconds: 10,
   memoryMB: 128,
-  resourceGroupName: 'data',
 });
