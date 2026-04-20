@@ -2,26 +2,19 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
-// Mock the auth utilities
-const mockGetSession = vi.fn();
-const mockSetSession = vi.fn();
-const mockClearSession = vi.fn();
-const mockExtractTokenFromUrl = vi.fn();
-const mockClearTokenFromUrl = vi.fn();
-const mockValidateTokenWithServer = vi.fn();
-const mockIsValidJwt = vi.fn();
+// Mock the auth store
+const mockCheckAuth = vi.fn();
+let mockUser: { userId: string; email: string } | null = null;
+let mockIsLoading = true;
 
-vi.mock('@/lib/auth', () => ({
-  getSession: () => mockGetSession(),
-  setSession: (jwt: string) => mockSetSession(jwt),
-  clearSession: () => mockClearSession(),
-  extractTokenFromUrl: () => mockExtractTokenFromUrl(),
-  clearTokenFromUrl: () => mockClearTokenFromUrl(),
-  validateTokenWithServer: (token: string, url: string) =>
-    mockValidateTokenWithServer(token, url),
-  isValidJwt: (jwt: string) => mockIsValidJwt(jwt),
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
+    user: mockUser,
+    isLoading: mockIsLoading,
+    checkAuth: mockCheckAuth,
+  })),
 }));
 
 // Import after mocks
@@ -30,137 +23,88 @@ const { AuthGate } = await import('./AuthGate');
 describe('AuthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: no session, no token in URL
-    mockGetSession.mockReturnValue(null);
-    mockExtractTokenFromUrl.mockReturnValue(null);
-    mockIsValidJwt.mockReturnValue(false);
+    mockUser = null;
+    mockIsLoading = true;
   });
 
-  it('shows children when valid JWT exists in storage', async () => {
-    const validJwt = 'valid.jwt.token';
-    mockGetSession.mockReturnValue(validJwt);
-    mockIsValidJwt.mockReturnValue(true);
+  it('shows loading state while checking auth', () => {
+    mockIsLoading = true;
+    mockUser = null;
 
     render(
-      <AuthGate apiUrl="https://api.test/validate">
+      <AuthGate>
         <div data-testid="protected-content">Protected Content</div>
       </AuthGate>
     );
 
-    await waitFor(() => {
-      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-    });
+    expect(screen.getByText(/checking access/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
   });
 
-  it('shows loading state while checking session', () => {
-    // Session check is synchronous, so this tests initial render
-    mockGetSession.mockReturnValue(null);
-    mockExtractTokenFromUrl.mockReturnValue('token123');
-    mockValidateTokenWithServer.mockReturnValue(new Promise(() => {})); // Never resolves
+  it('shows children when authenticated', () => {
+    mockIsLoading = false;
+    mockUser = { userId: 'user-123', email: 'user@example.com' };
 
     render(
-      <AuthGate apiUrl="https://api.test/validate">
-        <div>Protected Content</div>
-      </AuthGate>
-    );
-
-    expect(screen.getByText(/validating/i)).toBeInTheDocument();
-  });
-
-  it('calls server validation when URL has token', async () => {
-    mockExtractTokenFromUrl.mockReturnValue('url-token-123');
-    mockValidateTokenWithServer.mockResolvedValue('new.jwt.token');
-
-    render(
-      <AuthGate apiUrl="https://api.test/validate">
+      <AuthGate>
         <div data-testid="protected-content">Protected Content</div>
       </AuthGate>
     );
 
-    await waitFor(() => {
-      expect(mockValidateTokenWithServer).toHaveBeenCalledWith(
-        'url-token-123',
-        'https://api.test/validate'
-      );
-    });
+    expect(screen.getByTestId('protected-content')).toBeInTheDocument();
   });
 
-  it('stores JWT and shows children on successful validation', async () => {
-    mockExtractTokenFromUrl.mockReturnValue('url-token-123');
-    mockValidateTokenWithServer.mockResolvedValue('new.jwt.token');
+  it('shows login form when not authenticated', () => {
+    mockIsLoading = false;
+    mockUser = null;
 
     render(
-      <AuthGate apiUrl="https://api.test/validate">
+      <AuthGate>
         <div data-testid="protected-content">Protected Content</div>
       </AuthGate>
     );
 
-    await waitFor(() => {
-      expect(mockSetSession).toHaveBeenCalledWith('new.jwt.token');
-      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-    });
+    expect(screen.getByText(/sign in to flowmap/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
   });
 
-  it('shows error when server returns 401 (null JWT)', async () => {
-    mockExtractTokenFromUrl.mockReturnValue('invalid-token');
-    mockValidateTokenWithServer.mockResolvedValue(null);
+  it('calls checkAuth on mount when no user', () => {
+    mockIsLoading = true;
+    mockUser = null;
 
     render(
-      <AuthGate apiUrl="https://api.test/validate">
+      <AuthGate>
         <div>Protected Content</div>
       </AuthGate>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/invalid access link/i)).toBeInTheDocument();
-    });
+    expect(mockCheckAuth).toHaveBeenCalledTimes(1);
   });
 
-  it('shows prompt when no token and no session', async () => {
-    mockGetSession.mockReturnValue(null);
-    mockExtractTokenFromUrl.mockReturnValue(null);
+  it('does not call checkAuth if user already exists', () => {
+    mockIsLoading = false;
+    mockUser = { userId: 'user-123', email: 'user@example.com' };
 
     render(
-      <AuthGate apiUrl="https://api.test/validate">
+      <AuthGate>
         <div>Protected Content</div>
       </AuthGate>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/access required/i)).toBeInTheDocument();
-    });
+    expect(mockCheckAuth).not.toHaveBeenCalled();
   });
 
-  it('clears URL params after successful auth', async () => {
-    mockExtractTokenFromUrl.mockReturnValue('url-token-123');
-    mockValidateTokenWithServer.mockResolvedValue('new.jwt.token');
+  it('renders email input and password input in login form', () => {
+    mockIsLoading = false;
+    mockUser = null;
 
     render(
-      <AuthGate apiUrl="https://api.test/validate">
-        <div data-testid="protected-content">Protected Content</div>
-      </AuthGate>
-    );
-
-    await waitFor(() => {
-      expect(mockClearTokenFromUrl).toHaveBeenCalled();
-    });
-  });
-
-  it('clears invalid session and shows prompt', async () => {
-    const expiredJwt = 'expired.jwt.token';
-    mockGetSession.mockReturnValue(expiredJwt);
-    mockIsValidJwt.mockReturnValue(false);
-    mockExtractTokenFromUrl.mockReturnValue(null);
-
-    render(
-      <AuthGate apiUrl="https://api.test/validate">
+      <AuthGate>
         <div>Protected Content</div>
       </AuthGate>
     );
 
-    await waitFor(() => {
-      expect(mockClearSession).toHaveBeenCalled();
-      expect(screen.getByText(/access required/i)).toBeInTheDocument();
-    });
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
   });
 });

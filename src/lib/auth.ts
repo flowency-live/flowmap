@@ -1,78 +1,37 @@
-export const STORAGE_KEY = 'flowmap_auth_jwt';
+/**
+ * Auth utilities for Cognito-based authentication
+ */
 
-interface JwtPayload {
-  authorized: boolean;
-  exp: number;
-  iat: number;
+/**
+ * Generate a unique invitation code (UUID v4)
+ */
+export function generateInviteCode(): string {
+  return crypto.randomUUID();
 }
 
-export async function validateTokenWithServer(
-  token: string,
-  apiUrl: string
-): Promise<string | null> {
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data.jwt ?? null;
-  } catch {
-    return null;
-  }
+/**
+ * Build an invite URL from the code
+ */
+export function buildInviteUrl(code: string): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}/invite?code=${code}`;
 }
 
-export function isValidJwt(jwt: string): boolean {
-  try {
-    const parts = jwt.split('.');
-    if (parts.length !== 3) {
-      return false;
-    }
-
-    // Decode payload (second part)
-    const payloadPart = parts[1];
-    if (!payloadPart) {
-      return false;
-    }
-    const payload = JSON.parse(atob(payloadPart)) as JwtPayload;
-
-    // Check expiry
-    if (!payload.exp) {
-      return false;
-    }
-
-    const now = Math.floor(Date.now() / 1000);
-    return payload.exp > now;
-  } catch {
-    return false;
-  }
-}
-
-export function getSession(): string | null {
-  return localStorage.getItem(STORAGE_KEY);
-}
-
-export function setSession(jwt: string): void {
-  localStorage.setItem(STORAGE_KEY, jwt);
-}
-
-export function clearSession(): void {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-export function extractTokenFromUrl(): string | null {
+/**
+ * Extract invite code from URL query parameters
+ */
+export function extractInviteCodeFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
-  return params.get('t');
+  return params.get('code');
 }
 
-export function clearTokenFromUrl(): void {
+/**
+ * Clear invite code from URL without page reload
+ */
+export function clearInviteCodeFromUrl(): void {
+  if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
-  url.searchParams.delete('t');
+  url.searchParams.delete('code');
   window.history.replaceState({}, '', url.pathname + url.search);
 }

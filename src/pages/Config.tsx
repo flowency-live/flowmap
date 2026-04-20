@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Globe, Check, X, ExternalLink, Users } from 'lucide-react';
+import { Settings, Globe, Check, X, ExternalLink, Users, UserPlus, Copy, Trash2 } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
+import { useInvitationStore } from '@/stores/invitationStore';
 import { cn } from '@/lib/utils';
+import { toast } from '@/stores/toastStore';
 import type { TeamCapacity } from '@/types';
 
 export function Config() {
@@ -10,6 +12,15 @@ export function Config() {
   const teams = usePortfolioStore((s) => s.teams);
   const updateInitiativeFavicon = usePortfolioStore((s) => s.updateInitiativeFavicon);
   const updateTeamCapacity = usePortfolioStore((s) => s.updateTeamCapacity);
+
+  // Invitation store
+  const { invitations, isLoading: invitationsLoading, loadInvitations, createInvitation, revokeInvitation } = useInvitationStore();
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+
+  useEffect(() => {
+    loadInvitations();
+  }, [loadInvitations]);
 
   // Only show parent initiatives (top-level items that can have branding)
   const parentInitiatives = useMemo(
@@ -401,6 +412,145 @@ export function Config() {
                 <li>
                   <strong>Total:</strong> (Streams × Per Stream) + BAU — should typically be ≤100%
                 </li>
+              </ul>
+            </div>
+          </section>
+
+          {/* User Management Section */}
+          <section className="mt-8">
+            <div className="flex items-center gap-2 mb-1">
+              <UserPlus className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">User Management</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Invite new users to FlowMap. Each invitation is single-use.
+            </p>
+
+            {/* Invite Form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newUserEmail) return;
+                setIsCreatingInvite(true);
+                try {
+                  const inviteUrl = await createInvitation(newUserEmail);
+                  await navigator.clipboard.writeText(inviteUrl);
+                  toast.success('Invite link copied to clipboard');
+                  setNewUserEmail('');
+                } catch {
+                  toast.error('Failed to create invitation');
+                } finally {
+                  setIsCreatingInvite(false);
+                }
+              }}
+              className="flex gap-2 mb-4"
+            >
+              <input
+                type="email"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="user@company.com"
+                className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isCreatingInvite || !newUserEmail}
+                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreatingInvite ? 'Creating...' : 'Generate Invite'}
+              </button>
+            </form>
+
+            {/* Invitations Table */}
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold">Email</th>
+                    <th className="px-4 py-3 text-left font-semibold">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold">Invited</th>
+                    <th className="px-4 py-3 w-24"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invitations.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className="border-b border-border/50 last:border-b-0"
+                    >
+                      <td className="px-4 py-3 font-medium">{inv.email}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                            inv.status === 'pending' && 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+                            inv.status === 'accepted' && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                            inv.status === 'revoked' && 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                          )}
+                        >
+                          {inv.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {inv.invitedAt
+                          ? new Date(inv.invitedAt).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {inv.status === 'pending' && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={async () => {
+                                const url = `${window.location.origin}/invite?code=${inv.code}`;
+                                await navigator.clipboard.writeText(url);
+                                toast.success('Invite link copied');
+                              }}
+                              className="p-1 text-muted-foreground hover:text-foreground rounded"
+                              title="Copy invite link"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => revokeInvitation(inv.id)}
+                              className="p-1 text-muted-foreground hover:text-destructive rounded"
+                              title="Revoke invitation"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {invitations.length === 0 && !invitationsLoading && (
+                <div className="p-8 text-center text-muted-foreground">
+                  No invitations yet. Create one above.
+                </div>
+              )}
+
+              {invitationsLoading && (
+                <div className="p-8 text-center text-muted-foreground">
+                  Loading invitations...
+                </div>
+              )}
+            </div>
+
+            {/* Help text */}
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+              <p className="font-medium mb-2">Invitation flow:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Enter the user&apos;s email and click &quot;Generate Invite&quot;</li>
+                <li>The invite link is automatically copied to your clipboard</li>
+                <li>Share the link with the user — they will create a password</li>
+                <li>Status changes to &quot;accepted&quot; once they complete signup</li>
               </ul>
             </div>
           </section>

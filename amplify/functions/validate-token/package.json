@@ -1,9 +1,0 @@
-{
-  "name": "validate-token",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "handler.ts",
-  "devDependencies": {
-    "@types/aws-lambda": "^8.10.0"
-  }
-}

@@ -7,12 +7,40 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
  * - Theme: Portfolio groupings (e.g., "M&S Onboarding", "NatWest Onboarding")
  * - Team: Delivery teams (UPJ, UIE, UNC, Logan, DataE, DataS)
  * - Initiative: Work items with team-specific flow states
+ * - Invitation: Single-use invite links for user onboarding
  *
  * Flow States: N/A | N/S | Discovery | Ready | Constrained | Doing | Done | Blocked
  *
  * Real-time: Subscriptions auto-generated for all mutations
+ * Authorization: Cognito User Pool (authenticated users only)
  */
 const schema = a.schema({
+  /**
+   * Invitation - Single-use invite links for user onboarding
+   *
+   * Flow:
+   * 1. Admin creates invitation with email
+   * 2. System generates unique code (UUID)
+   * 3. Admin shares link: /invite?code={code}
+   * 4. User visits link, pre-fills email, sets password
+   * 5. Cognito pre-signup trigger validates invitation
+   * 6. On successful signup, invitation status → 'accepted'
+   */
+  Invitation: a
+    .model({
+      email: a.email().required(),
+      code: a.string().required(),
+      status: a.enum(['pending', 'accepted', 'revoked']),
+      invitedBy: a.string(),
+      invitedAt: a.datetime(),
+      acceptedAt: a.datetime(),
+    })
+    .authorization((allow) => [allow.authenticated()])
+    .secondaryIndexes((index) => [
+      index('code').name('byCode'),
+      index('email').name('byEmail'),
+    ]),
+
   /**
    * Theme - Portfolio grouping for initiatives (brand)
    */
@@ -22,7 +50,7 @@ const schema = a.schema({
       faviconUrl: a.string(), // URL to brand favicon/logo
       initiatives: a.hasMany('Initiative', 'themeId'),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.authenticated()]),
 
   /**
    * Team - Delivery team that works on initiatives
@@ -39,7 +67,7 @@ const schema = a.schema({
       isPrimaryConstraint: a.boolean().default(false),
       capacityConfig: a.json(), // JSON of TeamCapacity
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.authenticated()]),
 
   /**
    * Initiative - Work item tracked across teams
@@ -71,7 +99,7 @@ const schema = a.schema({
       teamNotes: a.json(), // JSON string of Record<teamId, string> - notes per team
       teamStartDates: a.json(), // JSON string of Record<teamId, string> - estimated start dates per team
     })
-    .authorization((allow) => [allow.publicApiKey()])
+    .authorization((allow) => [allow.authenticated()])
     .secondaryIndexes((index) => [index('themeId').name('byTheme')]),
 
   /**
@@ -89,7 +117,7 @@ const schema = a.schema({
       toInitiativeId: a.id().required(), // The blocked initiative
       notes: a.string(), // Optional description of the dependency
     })
-    .authorization((allow) => [allow.publicApiKey()])
+    .authorization((allow) => [allow.authenticated()])
     .secondaryIndexes((index) => [
       index('fromInitiativeId').name('byFromInitiative'),
       index('toInitiativeId').name('byToInitiative'),
@@ -101,9 +129,6 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: 'apiKey',
-    apiKeyAuthorizationMode: {
-      expiresInDays: 365,
-    },
+    defaultAuthorizationMode: 'userPool',
   },
 });

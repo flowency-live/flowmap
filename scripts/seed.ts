@@ -176,6 +176,36 @@ async function seedInitiatives(
   return { parentCount, childCount };
 }
 
+async function seedBootstrapAdmin() {
+  console.log('Creating bootstrap admin invitation...');
+
+  const bootstrapEmail = 'jason.jones@uinsure.co.uk';
+  const bootstrapCode = 'bootstrap-admin';
+
+  // Check if invitation already exists
+  const { data: existing } = await client.models.Invitation.list({
+    filter: { email: { eq: bootstrapEmail } },
+  });
+
+  if (existing && existing.length > 0) {
+    console.log(`  Bootstrap invitation already exists for ${bootstrapEmail}`);
+    return;
+  }
+
+  const { data } = await client.models.Invitation.create({
+    email: bootstrapEmail,
+    code: bootstrapCode,
+    status: 'pending',
+    invitedBy: 'system',
+    invitedAt: new Date().toISOString(),
+  });
+
+  if (data) {
+    console.log(`  Created bootstrap invitation for: ${bootstrapEmail}`);
+    console.log(`  Invite code: ${bootstrapCode}`);
+  }
+}
+
 async function seed() {
   console.log('\n🌱 Starting FlowMap seed from roadmap.json...\n');
 
@@ -184,6 +214,7 @@ async function seed() {
     const theme = await seedTheme();
     const teams = await seedTeams();
     const { parentCount, childCount } = await seedInitiatives(theme, teams);
+    await seedBootstrapAdmin();
 
     console.log('\n✅ Seed completed successfully!\n');
     console.log('Summary:');
@@ -191,6 +222,7 @@ async function seed() {
     console.log(`  - ${teams.length} teams`);
     console.log(`  - ${parentCount} parent initiatives`);
     console.log(`  - ${childCount} child items`);
+    console.log(`  - 1 bootstrap admin invitation`);
   } catch (error) {
     console.error('\n❌ Seed failed:', error);
     process.exit(1);
