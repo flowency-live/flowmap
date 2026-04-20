@@ -3,8 +3,7 @@ import type {
   APIGatewayProxyResultV2,
 } from 'aws-lambda';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
-import jwt from 'jsonwebtoken';
-import { timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +15,8 @@ const SSM_PARAMS = {
   accessToken: '/flowmap/auth/access-token',
   jwtSecret: '/flowmap/auth/jwt-secret',
 } as const;
+
+const JWT_EXPIRY_DAYS = 30;
 
 function createResponse(
   statusCode: number,
@@ -35,6 +36,27 @@ function secureCompare(a: string, b: string): boolean {
   const bufferA = Buffer.from(a);
   const bufferB = Buffer.from(b);
   return timingSafeEqual(bufferA, bufferB);
+}
+
+function base64UrlEncode(str: string): string {
+  return Buffer.from(str)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function signJwt(payload: Record<string, unknown>, secret: string): string {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signature = createHmac('sha256', secret)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
 
 export async function handler(
@@ -84,13 +106,14 @@ export async function handler(
     }
 
     // Sign and return JWT
-    const signedJwt = jwt.sign(
+    const now = Math.floor(Date.now() / 1000);
+    const signedJwt = signJwt(
       {
         authorized: true,
-        iat: Math.floor(Date.now() / 1000),
+        iat: now,
+        exp: now + JWT_EXPIRY_DAYS * 24 * 60 * 60,
       },
-      jwtSecret,
-      { expiresIn: '30d' }
+      jwtSecret
     );
 
     return createResponse(200, { jwt: signedJwt });

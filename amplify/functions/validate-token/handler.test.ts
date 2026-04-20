@@ -11,14 +11,6 @@ vi.mock('@aws-sdk/client-ssm', () => ({
   GetParameterCommand: vi.fn().mockImplementation((params) => params),
 }));
 
-// Mock jsonwebtoken
-const mockSign = vi.fn().mockReturnValue('mock.jwt.token');
-vi.mock('jsonwebtoken', () => ({
-  default: {
-    sign: mockSign,
-  },
-}));
-
 // Import after mocks are set up
 const { handler } = await import('./handler');
 const { GetParameterCommand } = await import('@aws-sdk/client-ssm');
@@ -26,7 +18,6 @@ const { GetParameterCommand } = await import('@aws-sdk/client-ssm');
 describe('validate-token handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSign.mockReturnValue('mock.jwt.token');
   });
 
   const createEvent = (body: string | null): APIGatewayProxyEventV2 =>
@@ -97,28 +88,36 @@ describe('validate-token handler', () => {
     expect(result.statusCode).toBe(200);
     const body = JSON.parse(result.body as string);
     expect(body).toHaveProperty('jwt');
-    expect(body.jwt).toBe('mock.jwt.token');
+    expect(typeof body.jwt).toBe('string');
+    // JWT should have 3 parts separated by dots
+    expect(body.jwt.split('.').length).toBe(3);
   });
 
-  it('signs JWT with correct claims and expiry', async () => {
+  it('returns JWT with correct claims structure', async () => {
     const validToken = 'a1b2c3d4e5f67890';
-    const jwtSecret = 'jwt-signing-secret';
     mockSend
       .mockResolvedValueOnce({ Parameter: { Value: validToken } })
-      .mockResolvedValueOnce({ Parameter: { Value: jwtSecret } });
+      .mockResolvedValueOnce({ Parameter: { Value: 'jwt-signing-secret' } });
 
     const event = createEvent(JSON.stringify({ token: validToken }));
 
-    await handler(event);
+    const result = (await handler(event)) as APIGatewayProxyStructuredResultV2;
+    const body = JSON.parse(result.body as string);
 
-    expect(mockSign).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authorized: true,
-        iat: expect.any(Number),
-      }),
-      jwtSecret,
-      { expiresIn: '30d' }
+    // Decode JWT payload (second part) - handle URL-safe base64
+    const payloadPart = body.jwt.split('.')[1];
+    const paddedPayload = payloadPart + '='.repeat((4 - (payloadPart.length % 4)) % 4);
+    const payload = JSON.parse(
+      Buffer.from(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
     );
+
+    expect(payload).toHaveProperty('authorized', true);
+    expect(payload).toHaveProperty('iat');
+    expect(payload).toHaveProperty('exp');
+    expect(typeof payload.iat).toBe('number');
+    expect(typeof payload.exp).toBe('number');
+    // Expiry should be ~30 days in the future
+    expect(payload.exp - payload.iat).toBe(30 * 24 * 60 * 60);
   });
 
   it('returns 500 when SSM parameter fetch fails', async () => {
