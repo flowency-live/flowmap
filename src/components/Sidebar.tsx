@@ -36,7 +36,7 @@ function TechStackContent() {
         <h3 className="font-semibold text-foreground mb-2">Frontend</h3>
         <div className="space-y-1.5 text-muted-foreground">
           <div className="flex justify-between">
-            <span>React 18 + TypeScript</span>
+            <span>React 19 + TypeScript</span>
             <span className="text-xs bg-muted px-1.5 py-0.5 rounded">UI Framework</span>
           </div>
           <div className="flex justify-between">
@@ -85,6 +85,28 @@ function TechStackContent() {
         </div>
       </section>
 
+      {/* Authentication */}
+      <section>
+        <h3 className="font-semibold text-foreground mb-2">Authentication</h3>
+        <div className="space-y-1.5 text-muted-foreground">
+          <div className="flex justify-between">
+            <span>Lambda Function URL</span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Token Validation</span>
+          </div>
+          <div className="flex justify-between">
+            <span>SSM Parameter Store</span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Secrets</span>
+          </div>
+          <div className="flex justify-between">
+            <span>JWT</span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Session Tokens</span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground/70 mt-2">
+          Magic link auth with server-side validation. No API Gateway needed.
+        </p>
+      </section>
+
       {/* Data Model */}
       <section>
         <h3 className="font-semibold text-foreground mb-2">Data Model</h3>
@@ -117,17 +139,20 @@ function TechStackContent() {
         <div className="space-y-1.5 text-muted-foreground">
           <div className="flex justify-between">
             <span>Amplify Hosting</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">CI/CD</span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">CI/CD + Deploy</span>
           </div>
           <div className="flex justify-between">
             <span>CDK (via Amplify)</span>
             <span className="text-xs bg-muted px-1.5 py-0.5 rounded">IaC</span>
           </div>
           <div className="flex justify-between">
-            <span>GitHub Actions</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Pipeline</span>
+            <span>Lambda</span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Auth Function</span>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground/70 mt-2">
+          All infrastructure defined in code. Amplify deploys Lambda + DynamoDB + AppSync automatically.
+        </p>
       </section>
 
       {/* Cost Model */}
