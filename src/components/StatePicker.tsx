@@ -1,18 +1,48 @@
 import { useState, useRef, useEffect } from 'react';
+import { format, parse } from 'date-fns';
+import { enGB } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { StateBadge } from '@/components/StateBadge';
-import { Pencil, MessageSquare } from 'lucide-react';
+import { Pencil, MessageSquare, Calendar as CalendarIcon } from 'lucide-react';
 import type { FlowState, Effort } from '@/types';
 import { FLOW_STATES, STATE_CONFIG, EFFORT_OPTIONS } from '@/types';
 import { cn } from '@/lib/utils';
+
+// Helper to parse date string like "15th May" to Date
+function parseDateString(dateStr: string | undefined): Date | undefined {
+  if (!dateStr) return undefined;
+  const match = dateStr.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(\w+)/i);
+  if (match && match[1] && match[2]) {
+    const day = parseInt(match[1], 10);
+    const monthStr = match[2];
+    const year = new Date().getFullYear();
+    const parsed = parse(`${day} ${monthStr} ${year}`, 'd MMMM yyyy', new Date(), { locale: enGB });
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return undefined;
+}
+
+// Format Date to display string like "29th June"
+function formatDateString(date: Date): string {
+  const day = date.getDate();
+  const suffix = day === 1 || day === 21 || day === 31 ? 'st'
+    : day === 2 || day === 22 ? 'nd'
+    : day === 3 || day === 23 ? 'rd' : 'th';
+  const monthName = format(date, 'MMMM', { locale: enGB });
+  return `${day}${suffix} ${monthName}`;
+}
 
 interface StatePickerProps {
   value: FlowState;
   effort?: Effort | undefined;
   note?: string | undefined;
+  startDate?: string | undefined;
+  isAtRisk?: boolean;
   onChange: (state: FlowState) => void;
   onEffortChange?: (effort: Effort | null) => void;
   onNoteChange?: (note: string) => void;
+  onStartDateChange?: (startDate: string | null) => void;
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -23,9 +53,12 @@ export function StatePicker({
   value,
   effort,
   note,
+  startDate,
+  isAtRisk = false,
   onChange,
   onEffortChange,
   onNoteChange,
+  onStartDateChange,
   disabled = false,
   size = 'md',
   className,
@@ -34,6 +67,7 @@ export function StatePicker({
   const [open, setOpen] = useState(false);
   const [showEffort, setShowEffort] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [showStartDate, setShowStartDate] = useState(false);
   const [noteValue, setNoteValue] = useState(note ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -64,11 +98,24 @@ export function StatePicker({
     setShowNotes(false);
   };
 
+  const handleSelectStartDate = (date: Date | undefined) => {
+    if (date) {
+      onStartDateChange?.(formatDateString(date));
+    }
+    setShowStartDate(false);
+  };
+
+  const handleClearStartDate = () => {
+    onStartDateChange?.(null);
+    setShowStartDate(false);
+  };
+
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
       setShowEffort(false);
       setShowNotes(false);
+      setShowStartDate(false);
       // Save note on close
       if (noteValue !== (note ?? '')) {
         onNoteChange?.(noteValue);
@@ -92,6 +139,7 @@ export function StatePicker({
           <button
             className={cn(
               'inline-flex flex-col items-center justify-center gap-0.5 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded disabled:opacity-50 disabled:pointer-events-none',
+              isAtRisk && 'ring-2 ring-destructive ring-offset-1',
               className
             )}
             onClick={(e) => e.stopPropagation()}
@@ -101,9 +149,15 @@ export function StatePicker({
               {hasNote && (
                 <MessageSquare className="absolute -top-0.5 -right-0.5 h-2 w-2 text-primary fill-primary" />
               )}
+              {isAtRisk && (
+                <span className="absolute -top-1 -left-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              )}
             </div>
             {effort && (
-              <span className="text-[9px] font-medium text-muted-foreground leading-none">
+              <span className={cn(
+                'text-[9px] font-medium leading-none',
+                isAtRisk ? 'text-destructive' : 'text-muted-foreground'
+              )}>
                 {effort}
               </span>
             )}
@@ -115,7 +169,35 @@ export function StatePicker({
         align="center"
         onClick={(e) => e.stopPropagation()}
       >
-        {showNotes ? (
+        {showStartDate ? (
+          <div className="min-w-[240px]">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Estimated Start Date
+            </div>
+            <Calendar
+              mode="single"
+              selected={parseDateString(startDate)}
+              onSelect={handleSelectStartDate}
+              initialFocus
+            />
+            <div className="flex gap-2 mt-2 pt-2 border-t border-border">
+              <button
+                onClick={() => setShowStartDate(false)}
+                className="flex-1 text-xs text-muted-foreground hover:text-foreground py-1"
+              >
+                Back
+              </button>
+              {startDate && (
+                <button
+                  onClick={handleClearStartDate}
+                  className="flex-1 text-xs text-destructive hover:text-destructive/80 py-1"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        ) : showNotes ? (
           <div className="min-w-[240px]">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Team Note
@@ -207,7 +289,7 @@ export function StatePicker({
                 );
               })}
             </div>
-            {(onEffortChange || onNoteChange) && (
+            {(onEffortChange || onNoteChange || onStartDateChange) && (
               <div className="mt-2 pt-2 border-t border-border space-y-1">
                 {onEffortChange && (
                   <button
@@ -215,6 +297,25 @@ export function StatePicker({
                     className="w-full text-xs text-muted-foreground hover:text-foreground text-left px-2 py-1 hover:bg-accent/50 rounded"
                   >
                     {effort ? `Effort: ${effort}` : '+ Add effort'}
+                  </button>
+                )}
+                {onStartDateChange && (
+                  <button
+                    onClick={() => setShowStartDate(true)}
+                    className={cn(
+                      'w-full text-xs text-left px-2 py-1 hover:bg-accent/50 rounded flex items-center gap-1.5',
+                      isAtRisk ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="h-3 w-3" />
+                    {startDate ? (
+                      <span className="truncate max-w-[180px]">
+                        Start: {startDate}
+                        {isAtRisk && ' ⚠️ At Risk'}
+                      </span>
+                    ) : (
+                      'Set start date'
+                    )}
                   </button>
                 )}
                 {onNoteChange && (

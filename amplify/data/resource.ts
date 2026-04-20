@@ -69,6 +69,7 @@ const schema = a.schema({
       teamStates: a.json(), // JSON string of Record<teamId, FlowState>
       teamEfforts: a.json(), // JSON string of Record<teamId, Effort>
       teamNotes: a.json(), // JSON string of Record<teamId, string> - notes per team
+      teamStartDates: a.json(), // JSON string of Record<teamId, string> - estimated start dates per team
     })
     .authorization((allow) => [allow.publicApiKey()])
     .secondaryIndexes((index) => [index('themeId').name('byTheme')]),

@@ -41,6 +41,7 @@ import {
   getBottleneckTeam,
   getRollupState,
 } from '@/lib/metrics';
+import { calculateTeamRisk } from '@/lib/timeline';
 import { cn } from '@/lib/utils';
 import type { Initiative, Effort, FlowState } from '@/types';
 
@@ -142,6 +143,7 @@ export function Heatmap() {
     updateTeamState,
     updateTeamEffort,
     updateTeamNotes,
+    updateTeamStartDate,
     updateLiveDate,
     updateDueDate,
     addInitiative,
@@ -736,30 +738,38 @@ export function Heatmap() {
                               </PopoverContent>
                             </Popover>
                           </td>
-                          {teams.map((team) => (
-                            <td
-                              key={team.id}
-                              className="px-0.5 py-0.5 text-center h-7"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="flex items-center justify-center">
-                                <StatePicker
-                                  value={child.teamStates[team.id] ?? 'N/S'}
-                                  effort={child.teamEfforts[team.id]}
-                                  note={child.teamNotes[team.id]}
-                                  onChange={(state) =>
-                                    updateTeamState(child.id, team.id, state)
-                                  }
-                                  onEffortChange={(effort: Effort | null) =>
-                                    updateTeamEffort(child.id, team.id, effort)
-                                  }
-                                  onNoteChange={(note) =>
-                                    updateTeamNotes(child.id, team.id, note)
-                                  }
-                                />
-                              </div>
-                            </td>
-                          ))}
+                          {teams.map((team) => {
+                            const risk = calculateTeamRisk(child, team.id);
+                            return (
+                              <td
+                                key={team.id}
+                                className="px-0.5 py-0.5 text-center h-7"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center justify-center">
+                                  <StatePicker
+                                    value={child.teamStates[team.id] ?? 'N/S'}
+                                    effort={child.teamEfforts[team.id]}
+                                    note={child.teamNotes[team.id]}
+                                    startDate={child.teamStartDates?.[team.id]}
+                                    isAtRisk={risk.isAtRisk}
+                                    onChange={(state) =>
+                                      updateTeamState(child.id, team.id, state)
+                                    }
+                                    onEffortChange={(effort: Effort | null) =>
+                                      updateTeamEffort(child.id, team.id, effort)
+                                    }
+                                    onNoteChange={(note) =>
+                                      updateTeamNotes(child.id, team.id, note)
+                                    }
+                                    onStartDateChange={(startDate) =>
+                                      updateTeamStartDate(child.id, team.id, startDate)
+                                    }
+                                  />
+                                </div>
+                              </td>
+                            );
+                          })}
                           <td className="h-9" />
                         </tr>
                       );

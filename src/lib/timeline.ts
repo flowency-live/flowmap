@@ -1,4 +1,4 @@
-import { parse, format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInDays, isWithinInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
+import { parse, format, addDays, addBusinessDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInDays, differenceInBusinessDays, isWithinInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import type { Effort, Initiative, Team, Dependency, FlowState } from '@/types';
 
@@ -417,6 +417,81 @@ export function calculateTimelineMetrics(
     overloadedTeams,
     totalDependencies: dependencies.length,
   };
+}
+
+// ============================================================================
+// Risk Calculation (Start Date + Effort vs Due Date)
+// ============================================================================
+
+export interface TeamRiskInfo {
+  isAtRisk: boolean;
+  startDate?: Date;
+  projectedEndDate?: Date;
+  dueDate?: Date;
+  daysOverdue?: number; // Positive = late, Negative = early
+}
+
+/**
+ * Calculate if a team's work on a child initiative is at risk
+ * Risk = startDate + effortDays > dueDate
+ *
+ * @param initiative - The child initiative (must have parentId)
+ * @param teamId - The team to check
+ * @returns Risk info including whether at risk and dates
+ */
+export function calculateTeamRisk(
+  initiative: Initiative,
+  teamId: string
+): TeamRiskInfo {
+  // Only applicable to child initiatives
+  if (!initiative.parentId) {
+    return { isAtRisk: false };
+  }
+
+  const startDateStr = initiative.teamStartDates?.[teamId];
+  const effort = initiative.teamEfforts?.[teamId];
+  const dueDate = parseDateString(initiative.dueDate);
+
+  // If missing any required data, can't determine risk
+  if (!startDateStr || !effort || !dueDate) {
+    return { isAtRisk: false };
+  }
+
+  const startDate = parseDateString(startDateStr);
+  if (!startDate) {
+    return { isAtRisk: false };
+  }
+
+  const effortDays = effortToDays(effort);
+  const projectedEndDate = addBusinessDays(startDate, effortDays);
+
+  // Calculate working days difference (positive = overdue)
+  const daysOverdue = differenceInBusinessDays(projectedEndDate, dueDate);
+  const isAtRisk = daysOverdue > 0;
+
+  return {
+    isAtRisk,
+    startDate,
+    projectedEndDate,
+    dueDate,
+    daysOverdue,
+  };
+}
+
+/**
+ * Check if any team's work on a child initiative is at risk
+ */
+export function isInitiativeAtRisk(
+  initiative: Initiative,
+  teamIds: string[]
+): boolean {
+  if (!initiative.parentId) return false;
+
+  for (const teamId of teamIds) {
+    const risk = calculateTeamRisk(initiative, teamId);
+    if (risk.isAtRisk) return true;
+  }
+  return false;
 }
 
 // ============================================================================

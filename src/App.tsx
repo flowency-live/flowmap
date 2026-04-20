@@ -86,6 +86,17 @@ function App() {
               teamNotes = {};
             }
           }
+          let teamStartDates: Record<string, string> = {};
+          if ((data as { teamStartDates?: unknown }).teamStartDates) {
+            try {
+              const startDatesData = (data as { teamStartDates?: unknown }).teamStartDates;
+              teamStartDates = typeof startDatesData === 'string'
+                ? JSON.parse(startDatesData)
+                : startDatesData as Record<string, string>;
+            } catch {
+              teamStartDates = {};
+            }
+          }
           const initiative: Initiative = {
             id: data.id,
             name: data.name,
@@ -99,6 +110,7 @@ function App() {
             teamStates,
             teamEfforts,
             teamNotes,
+            teamStartDates,
           };
           _applyInitiativeUpdate(initiative);
         }
@@ -141,6 +153,17 @@ function App() {
               teamNotes = {};
             }
           }
+          let teamStartDates: Record<string, string> = {};
+          if ((data as { teamStartDates?: unknown }).teamStartDates) {
+            try {
+              const startDatesData = (data as { teamStartDates?: unknown }).teamStartDates;
+              teamStartDates = typeof startDatesData === 'string'
+                ? JSON.parse(startDatesData)
+                : startDatesData as Record<string, string>;
+            } catch {
+              teamStartDates = {};
+            }
+          }
           const initiative: Initiative = {
             id: data.id,
             name: data.name,
@@ -154,6 +177,7 @@ function App() {
             teamStates,
             teamEfforts,
             teamNotes,
+            teamStartDates,
           };
           _applyInitiativeUpdate(initiative);
         }

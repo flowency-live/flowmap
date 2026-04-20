@@ -19,6 +19,7 @@ interface PortfolioStore extends PortfolioState {
   updateTeamState: (initiativeId: string, teamId: string, state: FlowState) => Promise<void>;
   updateTeamEffort: (initiativeId: string, teamId: string, effort: Effort | null) => Promise<void>;
   updateTeamNotes: (initiativeId: string, teamId: string, notes: string) => Promise<void>;
+  updateTeamStartDate: (initiativeId: string, teamId: string, startDate: string | null) => Promise<void>;
   updateLiveDate: (initiativeId: string, liveDate: string) => Promise<void>;
   updateDueDate: (initiativeId: string, dueDate: string) => Promise<void>;
   addInitiative: (themeId: string, name: string, parentId?: string | null) => Promise<void>;
@@ -71,6 +72,7 @@ function toLocalInitiative(amplifyInit: {
   teamStates?: unknown;
   teamEfforts?: unknown;
   teamNotes?: unknown;
+  teamStartDates?: unknown;
 }): Initiative {
   let teamStates: Record<string, FlowState> = {};
   if (amplifyInit.teamStates) {
@@ -102,6 +104,16 @@ function toLocalInitiative(amplifyInit: {
       teamNotes = {};
     }
   }
+  let teamStartDates: Record<string, string> = {};
+  if (amplifyInit.teamStartDates) {
+    try {
+      teamStartDates = typeof amplifyInit.teamStartDates === 'string'
+        ? JSON.parse(amplifyInit.teamStartDates)
+        : amplifyInit.teamStartDates as Record<string, string>;
+    } catch {
+      teamStartDates = {};
+    }
+  }
   const initiative: Initiative = {
     id: amplifyInit.id,
     name: amplifyInit.name,
@@ -115,6 +127,7 @@ function toLocalInitiative(amplifyInit: {
     teamStates,
     teamEfforts,
     teamNotes,
+    teamStartDates,
   };
   if (amplifyInit.faviconUrl) initiative.faviconUrl = amplifyInit.faviconUrl;
   return initiative;
@@ -288,6 +301,43 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
       set((s) => ({
         initiatives: s.initiatives.map((init) =>
           init.id === initiativeId ? { ...init, teamNotes: initiative.teamNotes } : init
+        ),
+      }));
+    }
+  },
+
+  updateTeamStartDate: async (initiativeId, teamId, startDate) => {
+    const initiative = get().initiatives.find((i) => i.id === initiativeId);
+    if (!initiative) return;
+
+    let newTeamStartDates: Record<string, string>;
+    if (startDate === null || startDate === '') {
+      // Remove start date for this team
+      const { [teamId]: _, ...rest } = initiative.teamStartDates;
+      newTeamStartDates = rest;
+    } else {
+      newTeamStartDates = { ...initiative.teamStartDates, [teamId]: startDate };
+    }
+
+    // Optimistic update
+    set((s) => ({
+      initiatives: s.initiatives.map((init) =>
+        init.id === initiativeId ? { ...init, teamStartDates: newTeamStartDates } : init
+      ),
+    }));
+
+    // Persist to AppSync
+    try {
+      await client.models.Initiative.update({
+        id: initiativeId,
+        teamStartDates: JSON.stringify(newTeamStartDates),
+      });
+    } catch (err) {
+      console.error('Failed to update team start date:', err);
+      // Revert on error
+      set((s) => ({
+        initiatives: s.initiatives.map((init) =>
+          init.id === initiativeId ? { ...init, teamStartDates: initiative.teamStartDates } : init
         ),
       }));
     }
@@ -536,13 +586,14 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         const { [id]: _state, ...remainingStates } = init.teamStates;
         const { [id]: _effort, ...remainingEfforts } = init.teamEfforts;
         const { [id]: _notes, ...remainingNotes } = init.teamNotes;
-        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts, teamNotes: remainingNotes };
+        const { [id]: _startDate, ...remainingStartDates } = init.teamStartDates;
+        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts, teamNotes: remainingNotes, teamStartDates: remainingStartDates };
       }),
     }));
 
     try {
       await client.models.Team.delete({ id });
-      // Update all initiatives to remove team state and notes
+      // Update all initiatives to remove team state, notes, and start dates
       const initiatives = get().initiatives;
       await Promise.all(
         initiatives.map((init) =>
@@ -550,6 +601,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
             id: init.id,
             teamStates: JSON.stringify(init.teamStates),
             teamNotes: JSON.stringify(init.teamNotes),
+            teamStartDates: JSON.stringify(init.teamStartDates),
           })
         )
       );
@@ -792,18 +844,19 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     set((s) => {
       const existing = s.initiatives.find((i) => i.id === initiative.id);
       if (existing) {
-        // Preserve local teamEfforts if incoming data has empty efforts
-        // (since teamEfforts aren't persisted to AppSync yet)
+        // Preserve local data if incoming has empty values
         const teamEfforts = Object.keys(initiative.teamEfforts).length > 0
           ? initiative.teamEfforts
           : existing.teamEfforts;
-        // Preserve local teamNotes if incoming has empty notes
         const teamNotes = Object.keys(initiative.teamNotes).length > 0
           ? initiative.teamNotes
           : existing.teamNotes;
+        const teamStartDates = Object.keys(initiative.teamStartDates).length > 0
+          ? initiative.teamStartDates
+          : existing.teamStartDates;
         return {
           initiatives: s.initiatives.map((i) =>
-            i.id === initiative.id ? { ...initiative, teamEfforts, teamNotes } : i
+            i.id === initiative.id ? { ...initiative, teamEfforts, teamNotes, teamStartDates } : i
           ),
         };
       }
@@ -834,7 +887,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         const { [id]: _state, ...remainingStates } = init.teamStates;
         const { [id]: _effort, ...remainingEfforts } = init.teamEfforts;
         const { [id]: _notes, ...remainingNotes } = init.teamNotes;
-        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts, teamNotes: remainingNotes };
+        const { [id]: _startDate, ...remainingStartDates } = init.teamStartDates;
+        return { ...init, teamStates: remainingStates, teamEfforts: remainingEfforts, teamNotes: remainingNotes, teamStartDates: remainingStartDates };
       }),
     }));
   },

@@ -97,6 +97,7 @@ export interface Initiative {
   teamStates: Record<string, FlowState>; // teamId -> state
   teamEfforts: Record<string, Effort>; // teamId -> effort
   teamNotes: Record<string, string>; // teamId -> notes
+  teamStartDates: Record<string, string>; // teamId -> estimated start date (e.g., "15th May")
 }
 
 export interface PortfolioState {
