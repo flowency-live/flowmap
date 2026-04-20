@@ -195,14 +195,17 @@ export function Heatmap() {
     );
   }, [parentInitiatives, filteredInitiatives]);
 
-  // Start collapsed on initial load
+  // Start collapsed on initial load - collapse ALL parent initiatives
   const hasInitializedRef = useRef(false);
   useEffect(() => {
-    if (!hasInitializedRef.current && parentsWithChildren.size > 0) {
-      setCollapsedInitiatives(new Set(parentsWithChildren));
+    if (!hasInitializedRef.current && initiatives.length > 0) {
+      const allParentIds = initiatives
+        .filter((i) => i.parentId === null)
+        .map((i) => i.id);
+      setCollapsedInitiatives(new Set(allParentIds));
       hasInitializedRef.current = true;
     }
-  }, [parentsWithChildren]);
+  }, [initiatives]);
 
   const toggleInitiative = (initId: string) => {
     setCollapsedInitiatives((prev) => {
