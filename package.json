@@ -35,6 +35,8 @@
   "devDependencies": {
     "@aws-amplify/backend": "^1.0.0",
     "@aws-amplify/backend-cli": "^1.0.0",
+    "@aws-sdk/client-dynamodb": "^3.1032.0",
+    "@aws-sdk/lib-dynamodb": "^3.1032.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^16.0.0",

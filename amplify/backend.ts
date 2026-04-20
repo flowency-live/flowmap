@@ -1,6 +1,7 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
+import { preSignUp } from './auth/pre-sign-up/resource';
 
 /**
  * FlowMap Backend
@@ -14,19 +15,12 @@ import { data } from './data/resource';
 const backend = defineBackend({
   auth,
   data,
+  preSignUp,
 });
 
 // Grant pre-signup Lambda access to the Invitation table
-// The table name follows Amplify's naming convention
-const preSignUpLambda = backend.auth.resources.userPoolFunction;
-if (preSignUpLambda) {
-  // Get the Invitation table from the data stack
-  const invitationTable = backend.data.resources.tables['Invitation'];
-  if (invitationTable) {
-    invitationTable.grantReadData(preSignUpLambda);
-    preSignUpLambda.addEnvironment(
-      'INVITATION_TABLE_NAME',
-      invitationTable.tableName
-    );
-  }
-}
+const invitationTable = backend.data.resources.tables['Invitation'];
+const preSignUpLambda = backend.preSignUp.resources.lambda;
+
+invitationTable.grantReadData(preSignUpLambda);
+preSignUpLambda.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
