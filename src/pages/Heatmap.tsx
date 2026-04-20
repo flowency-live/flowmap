@@ -18,6 +18,8 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   Calendar as CalendarIcon,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 import {
   Select,
@@ -156,6 +158,7 @@ export function Heatmap() {
   const [selectedTheme, setSelectedTheme] = useState<string>('all');
   const [selectedInit, setSelectedInit] = useState<Initiative | null>(null);
   const [collapsedInitiatives, setCollapsedInitiatives] = useState<Set<string>>(new Set());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [addingInitToTheme, setAddingInitToTheme] = useState<string | null>(null);
   const [addingChildToParent, setAddingChildToParent] = useState<string | null>(null);
   const [addTeamOpen, setAddTeamOpen] = useState(false);
@@ -849,12 +852,36 @@ export function Heatmap() {
         </div>
       </motion.div>
 
-      {/* Permanent Side Panel */}
-      <div className="w-[300px] border-l border-border bg-card flex-shrink-0">
-        <InitiativeDetail
-          initiative={selectedInit}
-          onClose={() => setSelectedInit(null)}
-        />
+      {/* Collapsible Side Panel */}
+      <div
+        className={cn(
+          "border-l border-border bg-card flex-shrink-0 transition-all duration-300 ease-in-out relative",
+          sidebarCollapsed ? "w-10" : "w-[300px]"
+        )}
+      >
+        {/* Toggle Button */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="absolute -left-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-muted transition-colors"
+          title={sidebarCollapsed ? "Expand panel" : "Collapse panel"}
+        >
+          {sidebarCollapsed ? (
+            <PanelRightClose className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <PanelRightOpen className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </button>
+
+        {/* Panel Content */}
+        <div className={cn(
+          "h-full transition-opacity duration-200",
+          sidebarCollapsed ? "opacity-0 invisible" : "opacity-100 visible"
+        )}>
+          <InitiativeDetail
+            initiative={selectedInit}
+            onClose={() => setSelectedInit(null)}
+          />
+        </div>
       </div>
     </div>
   );
