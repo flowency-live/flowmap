@@ -1,4 +1,5 @@
 import { defineBackend } from '@aws-amplify/backend';
+import { Function } from 'aws-cdk-lib/aws-lambda';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { preSignUp } from './auth/pre-sign-up/resource';
@@ -20,7 +21,7 @@ const backend = defineBackend({
 
 // Grant pre-signup Lambda access to the Invitation table
 const invitationTable = backend.data.resources.tables['Invitation'];
-const preSignUpLambda = backend.preSignUp.resources.lambda;
+const preSignUpLambda = backend.preSignUp.resources.lambda as Function;
 
 invitationTable.grantReadData(preSignUpLambda);
 preSignUpLambda.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
