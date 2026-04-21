@@ -1,5 +1,4 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { useLocation } from 'wouter';
 import { useInvitationStore } from '@/stores/invitationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { extractInviteCodeFromUrl } from '@/lib/auth';
@@ -7,7 +6,6 @@ import { extractInviteCodeFromUrl } from '@/lib/auth';
 type PageState = 'loading' | 'no-code' | 'invalid' | 'used' | 'revoked' | 'ready' | 'submitting' | 'success';
 
 export function InviteSignup() {
-  const [, navigate] = useLocation();
   const [pageState, setPageState] = useState<PageState>('loading');
   const [email, setEmail] = useState('');
   const [invitationId, setInvitationId] = useState('');
@@ -81,8 +79,8 @@ export function InviteSignup() {
       // Auto sign in after signup
       await signIn(email, password);
       setPageState('success');
-      // Redirect to home after short delay
-      setTimeout(() => navigate('/'), 1000);
+      // Full page navigation since InviteSignup is outside the main Router
+      setTimeout(() => { window.location.href = '/'; }, 1000);
     } catch (err) {
       setPageState('ready');
       setError(err instanceof Error ? err.message : 'Failed to create account');
@@ -150,7 +148,7 @@ export function InviteSignup() {
             This invitation has already been used to create an account.
           </p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => { window.location.href = '/'; }}
             className="text-primary hover:underline font-medium"
           >
             Go to sign in
@@ -272,7 +270,7 @@ export function InviteSignup() {
           Already have an account?{' '}
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={() => { window.location.href = '/'; }}
             className="text-primary hover:underline font-medium"
           >
             Sign in

@@ -63,6 +63,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Sign in failed',
       });
+      throw error; // Re-throw so callers can handle
     }
   },
 
