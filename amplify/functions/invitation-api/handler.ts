@@ -5,12 +5,20 @@ import {
   QueryCommand,
   UpdateCommand,
   ScanCommand,
+  GetCommand,
 } from '@aws-sdk/lib-dynamodb';
+import {
+  CognitoIdentityProviderClient,
+  AdminDeleteUserCommand,
+  ListUsersCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
+const dynamoClient = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const cognitoClient = new CognitoIdentityProviderClient({});
 
 const TABLE_NAME = process.env.INVITATION_TABLE_NAME!;
+const USER_POOL_ID = process.env.USER_POOL_ID!;
 
 interface Invitation {
   id: string;
@@ -105,6 +113,38 @@ export const handler = async (event: LambdaEvent) => {
 
       if (!['accepted', 'revoked'].includes(status)) {
         return response(400, { error: 'Invalid status' });
+      }
+
+      // If revoking, delete the Cognito user if they exist
+      if (status === 'revoked') {
+        // First get the invitation to find the email
+        const invResult = await docClient.send(
+          new GetCommand({ TableName: TABLE_NAME, Key: { id } })
+        );
+        const invitation = invResult.Item as Invitation | undefined;
+
+        if (invitation?.email) {
+          // Find the Cognito user by email
+          const usersResult = await cognitoClient.send(
+            new ListUsersCommand({
+              UserPoolId: USER_POOL_ID,
+              Filter: `email = "${invitation.email}"`,
+              Limit: 1,
+            })
+          );
+
+          // Delete the user if found
+          if (usersResult.Users && usersResult.Users.length > 0) {
+            const username = usersResult.Users[0]!.Username;
+            await cognitoClient.send(
+              new AdminDeleteUserCommand({
+                UserPoolId: USER_POOL_ID,
+                Username: username,
+              })
+            );
+            console.log(`Deleted Cognito user: ${invitation.email}`);
+          }
+        }
       }
 
       const updateExpression =

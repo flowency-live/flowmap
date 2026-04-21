@@ -1,6 +1,7 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
 import { Function, FunctionUrlAuthType, HttpMethod } from 'aws-cdk-lib/aws-lambda';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { auth } from './auth/resource';
 import { data } from './data/resource';
 import { invitationApi } from './functions/invitation-api/resource';
@@ -28,10 +29,18 @@ invitationTable.addGlobalSecondaryIndex({
   partitionKey: { name: 'code', type: AttributeType.STRING },
 });
 
-// Grant invitationApi Lambda access to table
+// Grant invitationApi Lambda access to table and Cognito
 const invitationApiFn = backend.invitationApi.resources.lambda as Function;
 invitationTable.grantReadWriteData(invitationApiFn);
 invitationApiFn.addEnvironment('INVITATION_TABLE_NAME', invitationTable.tableName);
+
+// Get User Pool ID and grant permission to disable users
+const userPool = backend.auth.resources.userPool;
+invitationApiFn.addEnvironment('USER_POOL_ID', userPool.userPoolId);
+invitationApiFn.addToRolePolicy(new PolicyStatement({
+  actions: ['cognito-idp:AdminDeleteUser', 'cognito-idp:ListUsers'],
+  resources: [userPool.userPoolArn],
+}));
 
 // Add Function URL for frontend access
 const fnUrl = invitationApiFn.addFunctionUrl({
