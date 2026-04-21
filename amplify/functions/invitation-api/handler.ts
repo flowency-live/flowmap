@@ -138,13 +138,11 @@ export const handler = async (event: LambdaEvent) => {
 };
 
 function response(statusCode: number, body: unknown) {
+  // CORS headers handled by Function URL configuration in backend.ts
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
     body: JSON.stringify(body),
   };
