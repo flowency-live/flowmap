@@ -369,7 +369,7 @@ export function Heatmap() {
                 ))}
                 <col className="w-[40px]" />
               </colgroup>
-              <thead className="text-xs text-muted-foreground uppercase bg-black/20 border-b border-[#2A3040]">
+              <thead className="text-xs text-foreground uppercase bg-black/20 border-b border-[#2A3040]">
                 <tr>
                   <th className="px-3 py-1.5 font-semibold">Initiative</th>
                   <th className="px-2 py-1.5 font-semibold">Date</th>
