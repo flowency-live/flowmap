@@ -22,146 +22,64 @@ const navItems = [
 
 function TechStackContent() {
   return (
-    <div className="space-y-6 text-sm">
-      {/* Architecture Overview */}
+    <div className="space-y-5 text-sm">
+      {/* Architecture */}
       <section>
-        <h3 className="font-semibold text-foreground mb-2">Architecture</h3>
-        <p className="text-muted-foreground leading-relaxed">
-          Serverless SPA with real-time sync. No backend servers to manage.
-          Data flows: React UI → GraphQL mutations → DynamoDB → WebSocket subscriptions → All connected clients.
+        <h3 className="font-semibold text-foreground mb-1.5">Architecture</h3>
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Serverless SPA with real-time sync via WebSocket subscriptions.
         </p>
       </section>
 
-      {/* Frontend */}
+      {/* Stack */}
       <section>
-        <h3 className="font-semibold text-foreground mb-2">Frontend</h3>
-        <div className="space-y-1.5 text-muted-foreground">
-          <div className="flex justify-between">
-            <span>React 19 + TypeScript</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">UI Framework</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Vite</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Build Tool</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Zustand</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">State Management</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Tailwind CSS</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Styling</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Radix UI</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Primitives</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Wouter</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Routing</span>
-          </div>
+        <h3 className="font-semibold text-foreground mb-1.5">Stack</h3>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span>React 19 + TypeScript</span>
+          <span>Vite + Tailwind</span>
+          <span>Zustand</span>
+          <span>Radix UI</span>
+          <span>AppSync GraphQL</span>
+          <span>DynamoDB</span>
+          <span>Cognito</span>
+          <span>Lambda</span>
         </div>
       </section>
 
-      {/* Backend */}
+      {/* Auth */}
       <section>
-        <h3 className="font-semibold text-foreground mb-2">Backend (AWS Amplify Gen 2)</h3>
-        <div className="space-y-1.5 text-muted-foreground">
-          <div className="flex justify-between">
-            <span>AppSync GraphQL</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">API Layer</span>
-          </div>
-          <div className="flex justify-between">
-            <span>DynamoDB</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Database</span>
-          </div>
-          <div className="flex justify-between">
-            <span>WebSocket Subscriptions</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Real-time Sync</span>
-          </div>
-          <div className="flex justify-between">
-            <span>CloudFront + S3</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Hosting</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Authentication */}
-      <section>
-        <h3 className="font-semibold text-foreground mb-2">Authentication</h3>
-        <div className="space-y-1.5 text-muted-foreground">
-          <div className="flex justify-between">
-            <span>Lambda Function URL</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Token Validation</span>
-          </div>
-          <div className="flex justify-between">
-            <span>SSM Parameter Store</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Secrets</span>
-          </div>
-          <div className="flex justify-between">
-            <span>JWT</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Session Tokens</span>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground/70 mt-2">
-          Magic link auth with server-side validation. No API Gateway needed.
+        <h3 className="font-semibold text-foreground mb-1.5">Authentication</h3>
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Invitation-based signup via Cognito. Admin sends email invite → user clicks link → sets password → auto-confirmed. No email verification step needed.
         </p>
       </section>
 
       {/* Data Model */}
       <section>
-        <h3 className="font-semibold text-foreground mb-2">Data Model</h3>
-        <div className="space-y-1.5 text-muted-foreground text-xs font-mono bg-muted/50 p-3 rounded-md">
-          <div><span className="text-primary">Theme</span> → groups initiatives</div>
-          <div><span className="text-primary">Initiative</span> → parent/child hierarchy</div>
-          <div><span className="text-primary">Team</span> → columns in heatmap</div>
-          <div><span className="text-primary">teamStates</span> → JSON map per initiative</div>
-          <div><span className="text-primary">teamEfforts</span> → effort estimates (S/M/L/XL)</div>
-          <div><span className="text-primary">teamNotes</span> → notes per team/initiative</div>
+        <h3 className="font-semibold text-foreground mb-1.5">Data Model</h3>
+        <div className="text-xs font-mono text-muted-foreground bg-muted/50 p-2 rounded-md space-y-0.5">
+          <div><span className="text-primary">Theme</span> → Initiative → Child initiatives</div>
+          <div><span className="text-primary">Team</span> → states, efforts, notes per initiative</div>
+          <div><span className="text-primary">Dependency</span> → initiative relationships</div>
         </div>
       </section>
 
-      {/* Key Features */}
+      {/* Capabilities */}
       <section>
-        <h3 className="font-semibold text-foreground mb-2">Key Capabilities</h3>
-        <ul className="space-y-1 text-muted-foreground list-disc list-inside">
-          <li>Real-time collaboration across sessions</li>
-          <li>Flow state tracking (8 states: N/S → Done)</li>
+        <h3 className="font-semibold text-foreground mb-1.5">Capabilities</h3>
+        <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+          <li>Real-time collaboration</li>
+          <li>8-state flow tracking (N/S → Done)</li>
           <li>Constraint team identification</li>
-          <li>Rollup aggregation for parent initiatives</li>
-          <li>Optimistic UI with server reconciliation</li>
-          <li>Hierarchical initiative structure</li>
+          <li>Hierarchical rollup aggregation</li>
         </ul>
       </section>
 
-      {/* Infrastructure */}
+      {/* Infra */}
       <section>
-        <h3 className="font-semibold text-foreground mb-2">Infrastructure</h3>
-        <div className="space-y-1.5 text-muted-foreground">
-          <div className="flex justify-between">
-            <span>Amplify Hosting</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">CI/CD + Deploy</span>
-          </div>
-          <div className="flex justify-between">
-            <span>CDK (via Amplify)</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">IaC</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Lambda</span>
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Auth Function</span>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground/70 mt-2">
-          All infrastructure defined in code. Amplify deploys Lambda + DynamoDB + AppSync automatically.
-        </p>
-      </section>
-
-      {/* Cost Model */}
-      <section>
-        <h3 className="font-semibold text-foreground mb-2">Cost Model</h3>
-        <p className="text-muted-foreground leading-relaxed">
-          Pay-per-use serverless. No idle costs. DynamoDB on-demand pricing.
-          AppSync charges per request + connection minutes. Scales to zero when unused.
+        <h3 className="font-semibold text-foreground mb-1.5">Infrastructure</h3>
+        <p className="text-muted-foreground text-xs">
+          AWS Amplify Gen 2 with CDK. Pay-per-use, scales to zero.
         </p>
       </section>
     </div>
