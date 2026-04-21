@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, AlertTriangle, Zap, Calendar, Settings, Info, Sun, Moon, LogOut } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Zap, Calendar, Settings, Info, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useSidebarStore } from '@/stores/sidebarStore';
 import {
   Sheet,
   SheetContent,
@@ -11,6 +12,11 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const navItems = [
   { href: '/', label: 'Portfolio Heatmap', icon: LayoutDashboard },
@@ -90,43 +96,80 @@ export function Sidebar() {
   const [location] = useLocation();
   const { theme, toggleTheme } = useThemeStore();
   const { user, signOut } = useAuthStore();
+  const { collapsed, toggleCollapsed } = useSidebarStore();
 
   return (
-    <div className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border h-screen flex flex-col fixed left-0 top-0">
-      {/* Logo */}
-      <div className="h-14 flex items-center px-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold tracking-tight font-display">
-          FlowMap
-        </h1>
+    <div
+      className={cn(
+        'bg-sidebar text-sidebar-foreground border-r border-sidebar-border h-screen flex flex-col fixed left-0 top-0 transition-all duration-300 ease-in-out z-40',
+        collapsed ? 'w-16' : 'w-64'
+      )}
+    >
+      {/* Logo & Toggle */}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border">
+        {!collapsed && (
+          <h1 className="text-xl font-bold tracking-tight font-display">
+            FlowMap
+          </h1>
+        )}
+        <button
+          onClick={toggleCollapsed}
+          className={cn(
+            'p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors',
+            collapsed && 'mx-auto'
+          )}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 space-y-1">
+      <nav className="flex-1 py-6 px-2 space-y-1">
         {navItems.map((item) => {
           const active = location === item.href;
           const Icon = item.icon;
 
-          return (
+          const linkContent = (
             <Link
-              key={item.href}
               href={item.href}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
                 active
                   ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+                collapsed && 'justify-center px-2'
               )}
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
+              <Icon className="h-4 w-4 shrink-0" />
+              {!collapsed && item.label}
             </Link>
           );
+
+          if (collapsed) {
+            return (
+              <Tooltip key={item.href} delayDuration={0}>
+                <TooltipTrigger asChild>
+                  {linkContent}
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {item.label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return <div key={item.href}>{linkContent}</div>;
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        {user && (
+      <div className={cn('p-3 border-t border-sidebar-border', collapsed && 'px-2')}>
+        {user && !collapsed && (
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs text-sidebar-foreground/60 truncate max-w-35" title={user.email}>
               {user.email}
@@ -140,43 +183,108 @@ export function Sidebar() {
             </button>
           </div>
         )}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-sidebar-foreground/40">
-            Portfolio Flow Intelligence
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-            <Sheet>
-              <SheetTrigger asChild>
-                <button
-                  className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-                  title="Tech Stack Info"
-                >
-                  <Info className="h-4 w-4" />
-                </button>
-              </SheetTrigger>
-              <SheetContent className="overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>FlowMap Tech Stack</SheetTitle>
-                  <SheetDescription>
-                    Full-stack serverless architecture on AWS
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6">
-                  <TechStackContent />
-                </div>
-              </SheetContent>
-            </Sheet>
+        {user && collapsed && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={signOut}
+                className="w-full flex justify-center p-1.5 rounded-md text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors mb-2"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              Sign out
+            </TooltipContent>
+          </Tooltip>
+        )}
+        <div className={cn('flex items-center', collapsed ? 'flex-col gap-2' : 'justify-between')}>
+          {!collapsed && (
+            <span className="text-xs text-sidebar-foreground/40">
+              Portfolio Flow Intelligence
+            </span>
+          )}
+          <div className={cn('flex items-center', collapsed ? 'flex-col gap-1' : 'gap-1')}>
+            {collapsed ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleTheme}
+                    className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                  >
+                    {theme === 'dark' ? (
+                      <Sun className="h-4 w-4" />
+                    ) : (
+                      <Moon className="h-4 w-4" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </button>
+            )}
+            {collapsed ? (
+              <Sheet>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <SheetTrigger asChild>
+                      <button className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors">
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </SheetTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8}>
+                    Tech Stack
+                  </TooltipContent>
+                </Tooltip>
+                <SheetContent className="overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>FlowMap Tech Stack</SheetTitle>
+                    <SheetDescription>
+                      Full-stack serverless architecture on AWS
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <TechStackContent />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button
+                    className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                    title="Tech Stack Info"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent className="overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>FlowMap Tech Stack</SheetTitle>
+                    <SheetDescription>
+                      Full-stack serverless architecture on AWS
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-6">
+                    <TechStackContent />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
           </div>
         </div>
       </div>

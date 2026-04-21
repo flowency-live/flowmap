@@ -11,6 +11,7 @@ import { TeamKanban } from '@/pages/TeamKanban';
 import { Config } from '@/pages/Config';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { useSidebarStore } from '@/stores/sidebarStore';
 import { client } from '@/lib/amplifyClient';
 import type { Theme, Team, Initiative, FlowState, Effort, TeamCapacity, Dependency } from '@/types';
 
@@ -32,6 +33,7 @@ function App() {
 
   // Theme management
   const theme = useThemeStore((s) => s.theme);
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
 
   // Apply theme class to document root
   useEffect(() => {
@@ -375,7 +377,7 @@ function App() {
     <TooltipProvider>
       <div className="flex min-h-screen bg-background">
         <Sidebar />
-        <main className="ml-64 flex-1 h-screen overflow-hidden">
+        <main className={`flex-1 h-screen overflow-hidden transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
           <Router>
             <Switch>
               <Route path="/" component={Heatmap} />
