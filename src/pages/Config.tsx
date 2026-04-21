@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Settings, Globe, Check, X, ExternalLink, Users, UserPlus, Copy, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Settings, Globe, Check, X, ExternalLink, Users, UserPlus, Copy, Trash2, ChevronRight, Image } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { useInvitationStore } from '@/stores/invitationStore';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,21 @@ export function Config() {
     () => initiatives.filter((i) => i.parentId === null),
     [initiatives]
   );
+
+  // Collapsible sections state (all collapsed by default)
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      return next;
+    });
+  };
 
   // Favicon editing state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,14 +119,37 @@ export function Config() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl">
           {/* Initiative Branding Section */}
-          <section>
-            <h2 className="text-lg font-semibold mb-1">Initiative Branding</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add favicon URLs for each initiative to display brand logos in the heatmap.
-              You can use any image URL (favicon, logo, etc.)
-            </p>
+          <section className="border border-border rounded overflow-hidden">
+            <button
+              onClick={() => toggleSection('branding')}
+              className="w-full flex items-center gap-2 px-4 py-3 bg-muted/50 hover:bg-muted/80 transition-colors text-left"
+            >
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 text-muted-foreground transition-transform',
+                  expandedSections.has('branding') && 'rotate-90'
+                )}
+              />
+              <Image className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold flex-1">Initiative Branding</h2>
+              <span className="text-xs text-muted-foreground">{parentInitiatives.length} items</span>
+            </button>
 
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <AnimatePresence initial={false}>
+              {expandedSections.has('branding') && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Add favicon URLs for each initiative to display brand logos in the heatmap.
+                    </p>
+
+                    <div className="bg-card border border-border rounded overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
@@ -223,34 +261,53 @@ export function Config() {
               )}
             </div>
 
-            {/* Help text */}
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-              <p className="font-medium mb-2">Finding favicon URLs:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>
-                  Most sites: <code className="bg-muted px-1 rounded">https://example.com/favicon.ico</code>
-                </li>
-                <li>
-                  Google service: <code className="bg-muted px-1 rounded">https://www.google.com/s2/favicons?domain=example.com&sz=32</code>
-                </li>
-                <li>
-                  Or use any direct image URL (PNG, JPG, SVG)
-                </li>
-              </ul>
-            </div>
+                    {/* Help text */}
+                    <div className="mt-4 p-3 bg-muted/30 rounded text-xs text-muted-foreground">
+                      <p className="font-medium mb-1">Finding favicon URLs:</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        <li>Most sites: <code className="bg-muted px-1 rounded">https://example.com/favicon.ico</code></li>
+                        <li>Google service: <code className="bg-muted px-1 rounded">https://www.google.com/s2/favicons?domain=example.com&sz=32</code></li>
+                        <li>Or use any direct image URL (PNG, JPG, SVG)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </section>
 
           {/* Team Capacity Section */}
-          <section className="mt-8">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Team Capacity</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Configure how much work each team can handle in parallel. Used for timeline planning.
-            </p>
+          <section className="mt-4 border border-border rounded overflow-hidden">
+            <button
+              onClick={() => toggleSection('capacity')}
+              className="w-full flex items-center gap-2 px-4 py-3 bg-muted/50 hover:bg-muted/80 transition-colors text-left"
+            >
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 text-muted-foreground transition-transform',
+                  expandedSections.has('capacity') && 'rotate-90'
+                )}
+              />
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold flex-1">Team Capacity</h2>
+              <span className="text-xs text-muted-foreground">{teams.length} teams</span>
+            </button>
 
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <AnimatePresence initial={false}>
+              {expandedSections.has('capacity') && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Configure how much work each team can handle in parallel. Used for timeline planning.
+                    </p>
+
+                    <div className="bg-card border border-border rounded overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
@@ -396,38 +453,55 @@ export function Config() {
               )}
             </div>
 
-            {/* Help text */}
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-              <p className="font-medium mb-2">Capacity model:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>
-                  <strong>Streams:</strong> Number of parallel work streams (e.g., 2 for a team that can work on 2 initiatives at once)
-                </li>
-                <li>
-                  <strong>Per Stream:</strong> Capacity percentage allocated per stream (e.g., 45% each)
-                </li>
-                <li>
-                  <strong>BAU:</strong> Percentage reserved for business-as-usual work (e.g., 10%)
-                </li>
-                <li>
-                  <strong>Total:</strong> (Streams × Per Stream) + BAU — should typically be ≤100%
-                </li>
-              </ul>
-            </div>
+                    {/* Help text */}
+                    <div className="mt-4 p-3 bg-muted/30 rounded text-xs text-muted-foreground">
+                      <p className="font-medium mb-1">Capacity model:</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        <li><strong>Streams:</strong> Parallel work streams (e.g., 2 initiatives at once)</li>
+                        <li><strong>Per Stream:</strong> Capacity % per stream (e.g., 45%)</li>
+                        <li><strong>BAU:</strong> Reserved for business-as-usual (e.g., 10%)</li>
+                        <li><strong>Total:</strong> (Streams × Per Stream) + BAU — should be ≤100%</li>
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </section>
 
           {/* User Management Section */}
-          <section className="mt-8">
-            <div className="flex items-center gap-2 mb-1">
-              <UserPlus className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">User Management</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Invite new users to FlowMap. Each invitation is single-use.
-            </p>
+          <section className="mt-4 border border-border rounded overflow-hidden">
+            <button
+              onClick={() => toggleSection('users')}
+              className="w-full flex items-center gap-2 px-4 py-3 bg-muted/50 hover:bg-muted/80 transition-colors text-left"
+            >
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 text-muted-foreground transition-transform',
+                  expandedSections.has('users') && 'rotate-90'
+                )}
+              />
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold flex-1">User Management</h2>
+              <span className="text-xs text-muted-foreground">{invitations.length} invites</span>
+            </button>
 
-            {/* Invite Form */}
-            <form
+            <AnimatePresence initial={false}>
+              {expandedSections.has('users') && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Invite new users to FlowMap. Each invitation is single-use.
+                    </p>
+
+                    {/* Invite Form */}
+                    <form
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!newUserEmail) return;
@@ -543,16 +617,20 @@ export function Config() {
               )}
             </div>
 
-            {/* Help text */}
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-              <p className="font-medium mb-2">Invitation flow:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Enter the user&apos;s email and click &quot;Generate Invite&quot;</li>
-                <li>The invite link is automatically copied to your clipboard</li>
-                <li>Share the link with the user — they will create a password</li>
-                <li>Status changes to &quot;accepted&quot; once they complete signup</li>
-              </ul>
-            </div>
+                    {/* Help text */}
+                    <div className="mt-4 p-3 bg-muted/30 rounded text-xs text-muted-foreground">
+                      <p className="font-medium mb-1">Invitation flow:</p>
+                      <ul className="list-disc list-inside space-y-0.5">
+                        <li>Enter the user&apos;s email and click &quot;Generate Invite&quot;</li>
+                        <li>The invite link is automatically copied to your clipboard</li>
+                        <li>Share the link with the user — they will create a password</li>
+                        <li>Status changes to &quot;accepted&quot; once they complete signup</li>
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </section>
         </div>
       </div>
