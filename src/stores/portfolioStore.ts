@@ -383,8 +383,10 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     const teams = get().teams;
     const initiatives = get().initiatives;
     const defaultStates: Record<string, FlowState> = {};
+    // Child initiatives default to N/A, top-level to N/S
+    const defaultState: FlowState = parentId ? 'N/A' : 'N/S';
     teams.forEach((team) => {
-      defaultStates[team.id] = 'N/S';
+      defaultStates[team.id] = defaultState;
     });
 
     // Calculate next order value (max + 1)
