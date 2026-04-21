@@ -6,6 +6,7 @@ import {
   UpdateCommand,
   ScanCommand,
   GetCommand,
+  DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
   CognitoIdentityProviderClient,
@@ -105,7 +106,7 @@ export const handler = async (event: LambdaEvent) => {
       return response(201, invitation);
     }
 
-    // Update invitation status (revoke or accept)
+    // Update invitation status (accept) or delete (revoke)
     if (method === 'PATCH' && path.startsWith('/invitations/')) {
       const id = path.split('/')[2];
       const body = JSON.parse(event.body || '{}');
@@ -115,7 +116,7 @@ export const handler = async (event: LambdaEvent) => {
         return response(400, { error: 'Invalid status' });
       }
 
-      // If revoking, delete the Cognito user if they exist
+      // If revoking, delete Cognito user AND invitation record entirely
       if (status === 'revoked') {
         // First get the invitation to find the email
         const invResult = await docClient.send(
@@ -123,47 +124,50 @@ export const handler = async (event: LambdaEvent) => {
         );
         const invitation = invResult.Item as Invitation | undefined;
 
-        if (invitation?.email) {
-          // Find the Cognito user by email
-          const usersResult = await cognitoClient.send(
-            new ListUsersCommand({
+        if (!invitation) {
+          return response(404, { error: 'Invitation not found' });
+        }
+
+        // Find and delete the Cognito user by email
+        const usersResult = await cognitoClient.send(
+          new ListUsersCommand({
+            UserPoolId: USER_POOL_ID,
+            Filter: `email = "${invitation.email}"`,
+            Limit: 1,
+          })
+        );
+
+        if (usersResult.Users && usersResult.Users.length > 0) {
+          const username = usersResult.Users[0]!.Username;
+          await cognitoClient.send(
+            new AdminDeleteUserCommand({
               UserPoolId: USER_POOL_ID,
-              Filter: `email = "${invitation.email}"`,
-              Limit: 1,
+              Username: username,
             })
           );
-
-          // Delete the user if found
-          if (usersResult.Users && usersResult.Users.length > 0) {
-            const username = usersResult.Users[0]!.Username;
-            await cognitoClient.send(
-              new AdminDeleteUserCommand({
-                UserPoolId: USER_POOL_ID,
-                Username: username,
-              })
-            );
-            console.log(`Deleted Cognito user: ${invitation.email}`);
-          }
+          console.log(`Deleted Cognito user: ${invitation.email}`);
         }
+
+        // Delete the invitation record entirely
+        await docClient.send(
+          new DeleteCommand({ TableName: TABLE_NAME, Key: { id } })
+        );
+        console.log(`Deleted invitation record: ${id}`);
+
+        return response(200, { id, deleted: true });
       }
 
-      const updateExpression =
-        status === 'accepted'
-          ? 'SET #status = :status, acceptedAt = :acceptedAt'
-          : 'SET #status = :status';
-
-      const expressionValues: Record<string, string> =
-        status === 'accepted'
-          ? { ':status': status, ':acceptedAt': new Date().toISOString() }
-          : { ':status': status };
-
+      // For 'accepted' status, update the record
       await docClient.send(
         new UpdateCommand({
           TableName: TABLE_NAME,
           Key: { id },
-          UpdateExpression: updateExpression,
+          UpdateExpression: 'SET #status = :status, acceptedAt = :acceptedAt',
           ExpressionAttributeNames: { '#status': 'status' },
-          ExpressionAttributeValues: expressionValues,
+          ExpressionAttributeValues: {
+            ':status': status,
+            ':acceptedAt': new Date().toISOString(),
+          },
         })
       );
 
