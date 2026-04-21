@@ -369,7 +369,7 @@ export function Heatmap() {
                 ))}
                 <col className="w-[40px]" />
               </colgroup>
-              <thead className="text-xs text-foreground uppercase bg-black/20 border-b border-[#2A3040]">
+              <thead className="text-xs text-foreground uppercase bg-muted/50 border-b border-border">
                 <tr>
                   <th className="px-3 py-1.5 font-semibold">Initiative</th>
                   <th className="px-2 py-1.5 font-semibold">Date</th>
@@ -476,11 +476,11 @@ export function Heatmap() {
                     <tr
                       key={parentInit.id}
                       className={cn(
-                        'border-t border-t-[#2A3040] border-b border-[#1E2430] cursor-pointer transition-colors group',
+                        'border-t border-t-border border-b border-b-border/50 cursor-pointer transition-colors group',
                         constraintBorder,
                         hasChildren
-                          ? 'bg-black/10 hover:bg-black/20'
-                          : 'bg-transparent hover:bg-black/10',
+                          ? 'bg-muted/30 hover:bg-muted/50'
+                          : 'bg-transparent hover:bg-muted/30',
                         isSelected && 'bg-primary/10 hover:bg-primary/15'
                       )}
                       onClick={() => setSelectedInit(parentInit)}
@@ -683,7 +683,7 @@ export function Heatmap() {
                         <tr
                           key={child.id}
                           className={cn(
-                            'border-b border-[#1E2430] hover:bg-black/10 cursor-pointer transition-colors group',
+                            'border-b border-border/50 hover:bg-accent/50 cursor-pointer transition-colors group',
                             childConstraintBorder,
                             isChildSelected && 'bg-primary/10 hover:bg-primary/15'
                           )}
