@@ -84,6 +84,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     // Note: inviteCode is validated client-side before signup and used
     // to mark the invitation as accepted after signup succeeds.
     // We don't store it in Cognito - the invitation table tracks usage.
+    // Users are auto-confirmed via pre-signup Lambda trigger.
     set({ isLoading: true, error: null });
     try {
       await signUp({
