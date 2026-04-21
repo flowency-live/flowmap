@@ -153,6 +153,7 @@ export function Heatmap() {
     renameInitiative,
     addTeam,
     removeTeam,
+    renameTeam,
   } = usePortfolioStore();
 
   const [selectedTheme, setSelectedTheme] = useState<string>('all');
@@ -165,6 +166,8 @@ export function Heatmap() {
   const [addTeamValue, setAddTeamValue] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [renamingTeamId, setRenamingTeamId] = useState<string | null>(null);
+  const [renameTeamValue, setRenameTeamValue] = useState('');
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
 
   // Filter initiatives by theme
@@ -250,6 +253,19 @@ export function Heatmap() {
     }
     setRenamingId(null);
     setRenameValue('');
+  };
+
+  const startTeamRename = (team: { id: string; name: string }) => {
+    setRenamingTeamId(team.id);
+    setRenameTeamValue(team.name);
+  };
+
+  const confirmTeamRename = () => {
+    if (renamingTeamId && renameTeamValue.trim()) {
+      renameTeam(renamingTeamId, renameTeamValue.trim());
+    }
+    setRenamingTeamId(null);
+    setRenameTeamValue('');
   };
 
   // Keep selectedInit in sync with initiatives updates
@@ -373,36 +389,62 @@ export function Heatmap() {
                 <tr>
                   <th className="px-3 py-1.5 font-semibold">Initiative</th>
                   <th className="px-2 py-1.5 font-semibold">Date</th>
-                  {teams.map((team) => (
-                    <th key={team.id} className="px-1 py-1.5 font-semibold text-center group">
-                      <div className="flex items-center justify-center gap-0.5 relative">
-                        <Link
-                          href={`/team/${team.id}`}
-                          className={cn(
-                            'text-sm font-semibold normal-case hover:underline transition-colors',
-                            team.isPrimaryConstraint ? 'text-destructive hover:text-destructive/80' : 'hover:text-primary'
-                          )}
-                        >
-                          {team.name}
-                          {team.isPrimaryConstraint && (
-                            <AlertTriangle className="inline h-3 w-3 ml-0.5" />
-                          )}
-                        </Link>
-                        {teams.length > 1 && (
-                          <ConfirmDelete
-                            trigger={
-                              <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity absolute -right-1 top-0">
-                                <Trash2 className="h-2.5 w-2.5" />
+                  {teams.map((team) => {
+                    const isTeamRenaming = renamingTeamId === team.id;
+                    return (
+                      <th key={team.id} className="px-1 py-1.5 font-semibold text-center group">
+                        <div className="flex items-center justify-center gap-0.5 relative">
+                          {isTeamRenaming ? (
+                            <input
+                              autoFocus
+                              value={renameTeamValue}
+                              onChange={(e) => setRenameTeamValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') confirmTeamRename();
+                                if (e.key === 'Escape') setRenamingTeamId(null);
+                              }}
+                              onBlur={confirmTeamRename}
+                              className="w-full bg-transparent border-b border-primary text-sm font-semibold text-center outline-none py-0.5"
+                            />
+                          ) : (
+                            <>
+                              <Link
+                                href={`/team/${team.id}`}
+                                className={cn(
+                                  'text-sm font-semibold normal-case hover:underline transition-colors',
+                                  team.isPrimaryConstraint ? 'text-destructive hover:text-destructive/80' : 'hover:text-primary'
+                                )}
+                              >
+                                {team.name}
+                                {team.isPrimaryConstraint && (
+                                  <AlertTriangle className="inline h-3 w-3 ml-0.5" />
+                                )}
+                              </Link>
+                              <button
+                                onClick={() => startTeamRename(team)}
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
+                                title="Rename team"
+                              >
+                                <Pencil className="h-2.5 w-2.5" />
                               </button>
-                            }
-                            title={`Delete "${team.name}"?`}
-                            description="This will remove this team column from all initiatives."
-                            onConfirm={() => removeTeam(team.id)}
-                          />
-                        )}
-                      </div>
-                    </th>
-                  ))}
+                            </>
+                          )}
+                          {teams.length > 1 && !isTeamRenaming && (
+                            <ConfirmDelete
+                              trigger={
+                                <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity absolute -right-1 top-0">
+                                  <Trash2 className="h-2.5 w-2.5" />
+                                </button>
+                              }
+                              title={`Delete "${team.name}"?`}
+                              description="This will remove this team column from all initiatives."
+                              onConfirm={() => removeTeam(team.id)}
+                            />
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
                   {/* Add Team Column */}
                   <th className="px-1 py-1.5 text-center">
                     <Popover open={addTeamOpen} onOpenChange={setAddTeamOpen}>

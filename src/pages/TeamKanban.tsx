@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
+  Pencil,
 } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { StatePicker } from '@/components/StatePicker';
@@ -26,9 +27,12 @@ export function TeamKanban() {
   const updateTeamState = usePortfolioStore((s) => s.updateTeamState);
   const updateTeamEffort = usePortfolioStore((s) => s.updateTeamEffort);
   const updateTeamNotes = usePortfolioStore((s) => s.updateTeamNotes);
+  const renameTeam = usePortfolioStore((s) => s.renameTeam);
 
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
+  const [isRenamingTeam, setIsRenamingTeam] = useState(false);
+  const [renameTeamValue, setRenameTeamValue] = useState('');
 
   const team = useMemo(
     () => teams.find((t) => t.id === teamId),
@@ -77,6 +81,26 @@ export function TeamKanban() {
   };
 
   const isAllCollapsed = collapsedParents.size === parentsWithChildren.size && parentsWithChildren.size > 0;
+
+  const startTeamRename = () => {
+    if (team) {
+      setIsRenamingTeam(true);
+      setRenameTeamValue(team.name);
+    }
+  };
+
+  const confirmTeamRename = () => {
+    if (teamId && renameTeamValue.trim()) {
+      renameTeam(teamId, renameTeamValue.trim());
+    }
+    setIsRenamingTeam(false);
+    setRenameTeamValue('');
+  };
+
+  const cancelTeamRename = () => {
+    setIsRenamingTeam(false);
+    setRenameTeamValue('');
+  };
 
   const toggleParent = (parentId: string) => {
     setCollapsedParents((prev) => {
@@ -221,11 +245,35 @@ export function TeamKanban() {
           <div>
             <h1
               className={cn(
-                'text-xl font-semibold flex items-center gap-2',
+                'text-xl font-semibold flex items-center gap-2 group',
                 team.isPrimaryConstraint && 'text-destructive'
               )}
             >
-              {team.name} Workload
+              {isRenamingTeam ? (
+                <input
+                  autoFocus
+                  value={renameTeamValue}
+                  onChange={(e) => setRenameTeamValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmTeamRename();
+                    if (e.key === 'Escape') cancelTeamRename();
+                  }}
+                  onBlur={confirmTeamRename}
+                  className="bg-transparent border-b border-primary text-xl font-semibold outline-none py-0.5"
+                />
+              ) : (
+                <>
+                  {team.name}
+                  <button
+                    onClick={startTeamRename}
+                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
+                    title="Rename team"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              {!isRenamingTeam && ' Workload'}
               {team.isPrimaryConstraint && <AlertTriangle className="h-5 w-5" />}
             </h1>
             <p className="text-sm text-muted-foreground">

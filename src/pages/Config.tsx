@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Globe, Check, X, ExternalLink, Users, UserPlus, Copy, Trash2, ChevronRight, Image } from 'lucide-react';
+import { Settings, Globe, Check, X, ExternalLink, Users, UserPlus, Copy, Trash2, ChevronRight, Image, Pencil } from 'lucide-react';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { useInvitationStore } from '@/stores/invitationStore';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ export function Config() {
   const teams = usePortfolioStore((s) => s.teams);
   const updateInitiativeFavicon = usePortfolioStore((s) => s.updateInitiativeFavicon);
   const updateTeamCapacity = usePortfolioStore((s) => s.updateTeamCapacity);
+  const renameTeam = usePortfolioStore((s) => s.renameTeam);
 
   // Invitation store
   const { invitations, isLoading: invitationsLoading, loadInvitations, createInvitation, revokeInvitation } = useInvitationStore();
@@ -51,6 +52,10 @@ export function Config() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [capacityForm, setCapacityForm] = useState<TeamCapacity>({ streams: 1, streamPct: 100, bauPct: 0 });
 
+  // Team name editing state
+  const [renamingTeamId, setRenamingTeamId] = useState<string | null>(null);
+  const [renameTeamValue, setRenameTeamValue] = useState('');
+
   const startEdit = (initId: string, currentUrl: string | undefined) => {
     setEditingId(initId);
     setEditValue(currentUrl ?? '');
@@ -88,6 +93,25 @@ export function Config() {
 
   const cancelCapacityEdit = () => {
     setEditingTeamId(null);
+  };
+
+  // Team name editing functions
+  const startTeamRename = (teamId: string, currentName: string) => {
+    setRenamingTeamId(teamId);
+    setRenameTeamValue(currentName);
+  };
+
+  const confirmTeamRename = () => {
+    if (renamingTeamId && renameTeamValue.trim()) {
+      renameTeam(renamingTeamId, renameTeamValue.trim());
+    }
+    setRenamingTeamId(null);
+    setRenameTeamValue('');
+  };
+
+  const cancelTeamRename = () => {
+    setRenamingTeamId(null);
+    setRenameTeamValue('');
   };
 
   // Calculate total capacity percentage
@@ -322,15 +346,43 @@ export function Config() {
                 <tbody>
                   {teams.map((team) => {
                     const isEditing = editingTeamId === team.id;
+                    const isRenaming = renamingTeamId === team.id;
                     const config = team.capacityConfig;
                     const total = config ? getTotalCapacity(config) : null;
 
                     return (
                       <tr
                         key={team.id}
-                        className="border-b border-border/50 last:border-b-0"
+                        className="border-b border-border/50 last:border-b-0 group"
                       >
-                        <td className="px-4 py-3 font-medium">{team.name}</td>
+                        <td className="px-4 py-3 font-medium">
+                          {isRenaming ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                autoFocus
+                                value={renameTeamValue}
+                                onChange={(e) => setRenameTeamValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') confirmTeamRename();
+                                  if (e.key === 'Escape') cancelTeamRename();
+                                }}
+                                onBlur={confirmTeamRename}
+                                className="flex-1 px-2 py-1 text-sm border border-primary rounded bg-background focus:outline-none"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span>{team.name}</span>
+                              <button
+                                onClick={() => startTeamRename(team.id, team.name)}
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity"
+                                title="Rename team"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
                         {isEditing ? (
                           <>
                             <td className="px-4 py-2">
