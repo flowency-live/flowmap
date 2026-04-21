@@ -86,45 +86,45 @@
   --sidebar-accent: 217 33% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
 
-  --radius: 0.5rem;
+  --radius: 0.25rem;                  /* Sharper corners */
 }
 
-/* Dark mode - near-black blue background (#0B0F19) */
+/* Dark mode - austere near-black, minimal blue */
 .dark {
-  --background: 222 47% 7%;
-  --foreground: 220 13% 91%;
+  --background: 220 8% 4%;           /* #0A0A0B - near black */
+  --foreground: 220 8% 85%;
 
-  --card: 222 47% 9%;
-  --card-foreground: 220 13% 91%;
+  --card: 220 10% 7%;                /* #0F1114 - table/card bg */
+  --card-foreground: 220 8% 85%;
 
-  --popover: 222 47% 9%;
-  --popover-foreground: 220 13% 91%;
+  --popover: 220 10% 8%;
+  --popover-foreground: 220 8% 85%;
 
-  --primary: 220 13% 91%;
-  --primary-foreground: 222 47% 7%;
+  --primary: 220 8% 85%;
+  --primary-foreground: 220 8% 4%;
 
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 220 13% 91%;
+  --secondary: 220 8% 11%;           /* #1A1C1F - row alt */
+  --secondary-foreground: 220 8% 85%;
 
-  --muted: 217 33% 17%;
-  --muted-foreground: 218 11% 65%;
+  --muted: 220 8% 11%;
+  --muted-foreground: 220 6% 50%;
 
-  --accent: 217 33% 17%;
-  --accent-foreground: 220 13% 91%;
+  --accent: 220 8% 11%;
+  --accent-foreground: 220 8% 85%;
 
   --destructive: 0 72% 51%;
-  --destructive-foreground: 220 13% 91%;
+  --destructive-foreground: 220 8% 95%;
 
-  --border: 217 33% 20%;
-  --input: 217 33% 20%;
-  --ring: 220 13% 91%;
+  --border: 220 8% 16%;              /* #262829 - stronger borders */
+  --input: 220 8% 16%;
+  --ring: 220 8% 85%;
 
-  /* Sidebar stays dark navy */
-  --sidebar: 222 47% 9%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 15%;
-  --sidebar-accent: 217 33% 15%;
-  --sidebar-accent-foreground: 210 40% 98%;
+  /* Sidebar - same neutral dark */
+  --sidebar: 220 10% 6%;
+  --sidebar-foreground: 220 8% 90%;
+  --sidebar-border: 220 8% 13%;
+  --sidebar-accent: 220 8% 13%;
+  --sidebar-accent-foreground: 220 8% 90%;
 }
 
 @layer base {

@@ -138,8 +138,8 @@ export function StatePicker({
         ) : (
           <button
             className={cn(
-              'inline-flex flex-col items-center justify-center gap-0.5 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded disabled:opacity-50 disabled:pointer-events-none',
-              isAtRisk && 'ring-2 ring-destructive ring-offset-1',
+              'inline-flex flex-col items-center justify-center gap-0.5 transition-transform hover:scale-[1.02] focus:outline-none focus:ring-1 focus:ring-ring rounded disabled:opacity-50 disabled:pointer-events-none',
+              isAtRisk && 'ring-1 ring-destructive',
               className
             )}
             onClick={(e) => e.stopPropagation()}
@@ -277,9 +277,9 @@ export function StatePicker({
                     key={state}
                     onClick={() => handleSelectState(state)}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                      'flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-colors',
                       isSelected
-                        ? 'bg-accent ring-2 ring-ring'
+                        ? 'bg-accent ring-1 ring-ring'
                         : 'hover:bg-accent/50'
                     )}
                   >

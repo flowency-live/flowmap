@@ -122,41 +122,41 @@ export interface StateConfig {
 }
 
 export const STATE_CONFIG: Record<FlowState, StateConfig> = {
-  // N/A: Faded - this is noise, kill it visually
+  // N/A: Faded - noise, barely visible
   'N/A': {
     label: 'Not Applicable',
     short: 'N/A',
-    bgColor: '#F3F4F6',
+    bgColor: '#E5E7EB',
     textColor: '#9CA3AF',
-    bgColorDark: '#1F2937',
-    textColorDark: '#6B7280',
+    bgColorDark: '#1C1E21',
+    textColorDark: '#52555A',
   },
-  // Not Started: Orange - waiting, needs attention
+  // Not Started: Muted brown/orange
   'N/S': {
     label: 'Not Started',
     short: 'N/S',
-    bgColor: '#FB923C',
-    textColor: '#1F2937',
-    bgColorDark: '#FB923C',
-    textColorDark: '#0B0F19',
+    bgColor: '#D97706',
+    textColor: '#FFFFFF',
+    bgColorDark: '#92400E',
+    textColorDark: '#FDE68A',
   },
-  // Discovery: Amber - early stage exploration
+  // Discovery: Darker amber
   Discovery: {
     label: 'Discovery',
     short: 'Disc',
-    bgColor: '#F59E0B',
-    textColor: '#1F2937',
-    bgColorDark: '#FBBF24',
-    textColorDark: '#0B0F19',
+    bgColor: '#B45309',
+    textColor: '#FFFFFF',
+    bgColorDark: '#B45309',
+    textColorDark: '#FDE68A',
   },
-  // Ready: Vibrant lime - GO signal
+  // Ready: Muted green
   Ready: {
     label: 'Ready',
     short: 'Ready',
-    bgColor: '#84CC16',
-    textColor: '#1F2937',
-    bgColorDark: '#A3E635',
-    textColorDark: '#0B0F19',
+    bgColor: '#65A30D',
+    textColor: '#FFFFFF',
+    bgColorDark: '#4D7C0F',
+    textColorDark: '#D9F99D',
   },
   // Constrained: Strong purple - bottleneck, must POP
   Constrained: {
@@ -168,23 +168,23 @@ export const STATE_CONFIG: Record<FlowState, StateConfig> = {
     textColorDark: '#FFFFFF',
     isEmphasis: true,
   },
-  // Doing: Deep blue - actively in progress
+  // Doing: Muted blue
   Doing: {
     label: 'Doing',
     short: 'Doing',
-    bgColor: '#2563EB',
+    bgColor: '#1E40AF',
     textColor: '#FFFFFF',
-    bgColorDark: '#3B82F6',
-    textColorDark: '#FFFFFF',
+    bgColorDark: '#1E40AF',
+    textColorDark: '#BFDBFE',
   },
-  // Done: Strong green - complete, success
+  // Done: Muted green
   Done: {
     label: 'Done',
     short: 'Done',
-    bgColor: '#16A34A',
+    bgColor: '#166534',
     textColor: '#FFFFFF',
-    bgColorDark: '#22C55E',
-    textColorDark: '#FFFFFF',
+    bgColorDark: '#166534',
+    textColorDark: '#BBF7D0',
   },
   // Blocked: Strong red - problem, must POP
   Blocked: {

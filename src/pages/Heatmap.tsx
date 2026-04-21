@@ -358,7 +358,7 @@ export function Heatmap() {
         </div>
 
         {/* Matrix Table */}
-        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-card border border-border rounded overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-fixed">
               <colgroup>
@@ -369,7 +369,7 @@ export function Heatmap() {
                 ))}
                 <col className="w-[40px]" />
               </colgroup>
-              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted border-b-2 border-border">
                 <tr>
                   <th className="px-4 py-2 font-semibold">Initiative</th>
                   <th className="px-2 py-2 font-semibold">Date</th>
@@ -466,10 +466,10 @@ export function Heatmap() {
                     <tr
                       key={parentInit.id}
                       className={cn(
-                        'border-t-4 border-t-transparent border-b border-border/40 cursor-pointer transition-colors group',
+                        'border-t-2 border-t-border/50 border-b border-border cursor-pointer transition-colors group',
                         hasChildren
-                          ? 'bg-muted/40 hover:bg-muted/60'
-                          : 'bg-muted/20 hover:bg-muted/40',
+                          ? 'bg-muted/60 hover:bg-muted/80'
+                          : 'bg-muted/30 hover:bg-muted/50',
                         isSelected && 'bg-primary/10 hover:bg-primary/15'
                       )}
                       onClick={() => setSelectedInit(parentInit)}
@@ -662,7 +662,7 @@ export function Heatmap() {
                         <tr
                           key={child.id}
                           className={cn(
-                            'border-b border-border/20 hover:bg-muted/30 cursor-pointer transition-colors group',
+                            'border-b border-border/40 hover:bg-muted/40 cursor-pointer transition-colors group',
                             isChildSelected && 'bg-primary/10 hover:bg-primary/15'
                           )}
                           onClick={() => setSelectedInit(child)}
@@ -863,7 +863,7 @@ export function Heatmap() {
           {/* Toggle Button */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -left-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-muted transition-colors"
+            className="absolute -left-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded border border-border bg-background hover:bg-muted transition-colors"
             title={sidebarCollapsed ? "Expand panel" : "Collapse panel"}
           >
             {sidebarCollapsed ? (

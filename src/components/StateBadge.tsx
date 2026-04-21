@@ -9,11 +9,11 @@ interface StateBadgeProps {
   className?: string;
 }
 
-// Bold, readable sizes
+// Tight, functional sizes
 const SIZE_CLASSES = {
-  sm: 'h-5 px-2.5 text-[10px]',
-  md: 'h-6 px-3 text-[11px]',
-  lg: 'h-7 px-3.5 text-xs',
+  sm: 'h-4 px-1.5 text-[9px]',
+  md: 'h-5 px-2 text-[10px]',
+  lg: 'h-6 px-2.5 text-[11px]',
 };
 
 export function StateBadge({
@@ -31,39 +31,26 @@ export function StateBadge({
   const bgColor = isDark ? config.bgColorDark : config.bgColor;
   const textColor = isDark ? config.textColorDark : config.textColor;
 
-  // Glow colors for emphasis states in dark mode
-  const glowStyle = isDark && isEmphasis
-    ? {
-        boxShadow: state === 'Blocked'
-          ? '0 0 12px rgba(239, 68, 68, 0.5)'
-          : '0 0 12px rgba(139, 92, 246, 0.5)',
-      }
-    : {};
-
   return (
     <div
       title={config.label}
       style={{
         backgroundColor: bgColor,
         color: textColor,
-        ...glowStyle,
       }}
       className={cn(
-        // Base styles
+        // Base styles - tight, functional
         'inline-flex items-center justify-center',
-        'rounded-[4px] tracking-wide uppercase',
-        'transition-all duration-150',
-        // Shadow and border for depth
-        'shadow-sm',
+        'rounded-[2px] tracking-wide uppercase',
+        'transition-colors duration-100',
+        // 1px border for definition
         isEmphasis
-          ? 'ring-1 ring-inset ring-white/20 shadow-md font-extrabold'
+          ? 'border border-current/30 font-semibold'
           : isNA
-            ? 'border border-black/5'
-            : 'border border-black/10 font-bold',
+            ? 'border border-current/10'
+            : 'border border-current/20 font-medium',
         // Size
         SIZE_CLASSES[size],
-        // Hover effect
-        'hover:shadow-md hover:scale-[1.02]',
         className
       )}
     >
