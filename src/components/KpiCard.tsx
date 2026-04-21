@@ -21,38 +21,33 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        'p-4 rounded border',
-        variant === 'default' && 'bg-card border-border',
-        variant === 'destructive' && 'bg-destructive/5 border-destructive/30',
-        variant === 'warning' && 'bg-amber-950/20 border-amber-700/30',
+        'p-3 rounded border bg-card border-border',
         className
       )}
     >
       <div
         className={cn(
-          'flex items-center gap-2 mb-1.5',
-          variant === 'default' && 'text-muted-foreground',
-          variant === 'destructive' && 'text-destructive',
-          variant === 'warning' && 'text-amber-500'
+          'flex items-center gap-1.5 mb-1',
+          'text-muted-foreground'
         )}
       >
-        {Icon && <Icon className="h-4 w-4" />}
-        <span className="text-sm font-medium uppercase tracking-wide">
+        {Icon && <Icon className="h-3.5 w-3.5" />}
+        <span className="text-xs font-medium uppercase tracking-wide">
           {title}
         </span>
       </div>
       <div
         className={cn(
-          'text-2xl font-semibold',
+          'text-xl font-semibold',
           variant === 'default' && 'text-foreground',
-          variant === 'destructive' && 'text-destructive',
+          variant === 'destructive' && 'text-red-400',
           variant === 'warning' && 'text-amber-400'
         )}
       >
         {value}
       </div>
       {subtitle && (
-        <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
       )}
     </div>
   );

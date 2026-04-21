@@ -369,12 +369,12 @@ export function Heatmap() {
                 ))}
                 <col className="w-[40px]" />
               </colgroup>
-              <thead className="text-xs text-muted-foreground uppercase bg-muted border-b-2 border-border">
+              <thead className="text-xs text-muted-foreground uppercase bg-black/20 border-b border-[#2A3040]">
                 <tr>
-                  <th className="px-4 py-2 font-semibold">Initiative</th>
-                  <th className="px-2 py-2 font-semibold">Date</th>
+                  <th className="px-3 py-1.5 font-semibold">Initiative</th>
+                  <th className="px-2 py-1.5 font-semibold">Date</th>
                   {teams.map((team) => (
-                    <th key={team.id} className="px-1 py-2 font-semibold text-center group">
+                    <th key={team.id} className="px-1 py-1.5 font-semibold text-center group">
                       <div className="flex items-center justify-center gap-0.5 relative">
                         <Link
                           href={`/team/${team.id}`}
@@ -404,7 +404,7 @@ export function Heatmap() {
                     </th>
                   ))}
                   {/* Add Team Column */}
-                  <th className="px-1 py-2 text-center">
+                  <th className="px-1 py-1.5 text-center">
                     <Popover open={addTeamOpen} onOpenChange={setAddTeamOpen}>
                       <PopoverTrigger asChild>
                         <button className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-primary transition-colors text-[10px] font-medium px-1 py-0.5 rounded border border-dashed border-border hover:border-primary">
@@ -459,22 +459,33 @@ export function Heatmap() {
                       }, {} as Record<string, FlowState>)
                     : parentInit.teamStates;
 
+                  // Check for constraint signals
+                  const states = Object.values(displayStates);
+                  const hasBlocked = states.includes('Blocked');
+                  const hasConstrained = states.includes('Constrained');
+                  const constraintBorder = hasBlocked
+                    ? 'border-l-2 border-l-red-500'
+                    : hasConstrained
+                      ? 'border-l-2 border-l-violet-500'
+                      : '';
+
                   const rows: React.ReactNode[] = [];
 
-                  // Parent Initiative Row - bold with gap before
+                  // Parent Initiative Row
                   rows.push(
                     <tr
                       key={parentInit.id}
                       className={cn(
-                        'border-t-2 border-t-border/50 border-b border-border cursor-pointer transition-colors group',
+                        'border-t border-t-[#2A3040] border-b border-[#1E2430] cursor-pointer transition-colors group',
+                        constraintBorder,
                         hasChildren
-                          ? 'bg-muted/60 hover:bg-muted/80'
-                          : 'bg-muted/30 hover:bg-muted/50',
+                          ? 'bg-black/10 hover:bg-black/20'
+                          : 'bg-transparent hover:bg-black/10',
                         isSelected && 'bg-primary/10 hover:bg-primary/15'
                       )}
                       onClick={() => setSelectedInit(parentInit)}
                     >
-                      <td className="px-2 py-1.5 h-8">
+                      <td className="px-2 py-1 h-7">
                         <div className="flex items-center gap-1.5">
                           {hasChildren && (
                             <button
@@ -648,7 +659,7 @@ export function Heatmap() {
                           </div>
                         </td>
                       ))}
-                      <td className="h-10" />
+                      <td className="h-7" />
                     </tr>
                   );
 
@@ -658,16 +669,27 @@ export function Heatmap() {
                       const isChildRenaming = renamingId === child.id;
                       const isChildSelected = selectedInit?.id === child.id;
 
+                      // Check child constraint signals
+                      const childStates = Object.values(child.teamStates);
+                      const childHasBlocked = childStates.includes('Blocked');
+                      const childHasConstrained = childStates.includes('Constrained');
+                      const childConstraintBorder = childHasBlocked
+                        ? 'border-l-2 border-l-red-500'
+                        : childHasConstrained
+                          ? 'border-l-2 border-l-violet-500'
+                          : '';
+
                       rows.push(
                         <tr
                           key={child.id}
                           className={cn(
-                            'border-b border-border/40 hover:bg-muted/40 cursor-pointer transition-colors group',
+                            'border-b border-[#1E2430] hover:bg-black/10 cursor-pointer transition-colors group',
+                            childConstraintBorder,
                             isChildSelected && 'bg-primary/10 hover:bg-primary/15'
                           )}
                           onClick={() => setSelectedInit(child)}
                         >
-                          <td className="px-2 py-1 pl-6 h-7">
+                          <td className="px-2 py-0.5 pl-6 h-6">
                             <div className="flex items-center gap-1.5">
                               <span className="text-muted-foreground text-xs shrink-0">└</span>
                               {isChildRenaming ? (
@@ -785,7 +807,7 @@ export function Heatmap() {
                               </td>
                             );
                           })}
-                          <td className="h-9" />
+                          <td className="h-7" />
                         </tr>
                       );
                     });
@@ -821,7 +843,7 @@ export function Heatmap() {
                 {/* Add Initiative Row */}
                 {themes.length > 0 && (
                   <tr className="border-t border-border bg-muted/10">
-                    <td className="px-3 py-1.5 h-9" colSpan={teams.length + 3}>
+                    <td className="px-3 py-1 h-7" colSpan={teams.length + 3}>
                       {addingInitToTheme ? (
                         <InlineInput
                           placeholder="Initiative name..."

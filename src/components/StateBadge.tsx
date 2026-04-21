@@ -9,11 +9,11 @@ interface StateBadgeProps {
   className?: string;
 }
 
-// Tight, functional sizes
+// Tight, functional sizes - minimal padding
 const SIZE_CLASSES = {
-  sm: 'h-4 px-1.5 text-[9px]',
-  md: 'h-5 px-2 text-[10px]',
-  lg: 'h-6 px-2.5 text-[11px]',
+  sm: 'h-[14px] px-1 text-[8px]',
+  md: 'h-[16px] px-1.5 text-[9px]',
+  lg: 'h-[18px] px-2 text-[10px]',
 };
 
 export function StateBadge({
@@ -39,16 +39,12 @@ export function StateBadge({
         color: textColor,
       }}
       className={cn(
-        // Base styles - tight, functional
+        // Base styles - label, not button
         'inline-flex items-center justify-center',
-        'rounded-[2px] tracking-wide uppercase',
-        'transition-colors duration-100',
-        // 1px border for definition
-        isEmphasis
-          ? 'border border-current/30 font-semibold'
-          : isNA
-            ? 'border border-current/10'
-            : 'border border-current/20 font-medium',
+        'rounded-[2px] tracking-wider uppercase',
+        // 1px darker border for all
+        'border border-black/30',
+        isEmphasis ? 'font-semibold' : 'font-medium',
         // Size
         SIZE_CLASSES[size],
         className
