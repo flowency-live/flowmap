@@ -1,8 +1,18 @@
 import { create } from 'zustand';
-import { Amplify } from 'aws-amplify';
 import { useAuthStore } from '@/stores/authStore';
 import { buildInviteUrl } from '@/lib/auth';
 import { toast } from '@/stores/toastStore';
+
+// Type for Amplify outputs with custom fields (not inferred from local JSON)
+interface AmplifyOutputs {
+  custom?: {
+    invitationApiUrl?: string;
+  };
+}
+
+// Import outputs with proper typing (local file may not have custom field)
+import outputsJson from '../../amplify_outputs.json';
+const outputs = outputsJson as AmplifyOutputs;
 
 export interface Invitation {
   id: string;
@@ -26,14 +36,12 @@ interface InvitationStore {
   markInvitationAccepted: (id: string) => Promise<void>;
 }
 
-// Get the invitation API URL from Amplify configuration
+// Get invitation API URL from amplify_outputs.json (Amplify recommended pattern)
+// Note: Amplify.getConfig() strips custom fields, so we import directly
 function getInvitationApiUrl(): string {
-  const config = Amplify.getConfig();
-  console.log('Amplify config:', JSON.stringify(config, null, 2));
-  const url = (config as { custom?: { invitationApiUrl?: string } }).custom?.invitationApiUrl;
+  const url = outputs.custom?.invitationApiUrl;
   if (!url) {
-    console.error('invitationApiUrl not found in config');
-    throw new Error('Invitation API URL not configured');
+    throw new Error('Invitation API URL not configured - run npx ampx sandbox or deploy');
   }
   return url;
 }

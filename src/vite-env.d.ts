@@ -7,8 +7,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-
-declare module '../amplify_outputs.json' {
-  const outputs: Record<string, unknown>;
-  export default outputs;
-}

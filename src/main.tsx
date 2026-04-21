@@ -1,25 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
 import { AuthGate } from './components/AuthGate';
 import { InviteSignup } from './pages/InviteSignup';
 import App from './App';
 import './index.css';
 
-async function init() {
-  // Configure Amplify before rendering
-  try {
-    const response = await fetch('/amplify_outputs.json');
-    if (response.ok) {
-      const config = await response.json();
-      Amplify.configure(config);
-      console.log('Amplify configured successfully');
-    } else {
-      console.warn('Amplify config not found - data operations will fail');
-    }
-  } catch (err) {
-    console.error('Failed to configure Amplify:', err);
-  }
+// Configure Amplify at module load (recommended pattern)
+Amplify.configure(outputs);
+
+function init() {
 
   // Render the app
   const rootElement = document.getElementById('root');
