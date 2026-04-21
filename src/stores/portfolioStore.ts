@@ -555,7 +555,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
           // Add NOT_STARTED state for new team to all initiatives
           initiatives: s.initiatives.map((init) => ({
             ...init,
-            teamStates: { ...init.teamStates, [newTeam.id]: 'N/S' as FlowState },
+            teamStates: { ...init.teamStates, [newTeam.id]: 'N/A' as FlowState },
           })),
         }));
 
