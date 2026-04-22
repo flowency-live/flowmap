@@ -85,7 +85,8 @@ export function StatePicker({
 
   const handleSelectState = (state: FlowState) => {
     onChange(state);
-    // Don't auto-close, let user set effort/notes too
+    // Auto-close after selecting a state
+    setOpen(false);
   };
 
   const handleSelectEffort = (selectedEffort: Effort | null) => {
@@ -165,7 +166,7 @@ export function StatePicker({
         )}
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto p-2"
+        className="w-auto p-2 border-2 border-border shadow-xl bg-popover"
         align="center"
         onClick={(e) => e.stopPropagation()}
       >
