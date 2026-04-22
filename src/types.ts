@@ -131,32 +131,32 @@ export const STATE_CONFIG: Record<FlowState, StateConfig> = {
     bgColorDark: '#1A1C1E',
     textColorDark: '#4B4F54',
   },
-  // Not Started: Warm brown with more presence
+  // Not Started: Warm brown - visible but neutral
   'N/S': {
     label: 'Not Started',
     short: 'N/S',
-    bgColor: '#9A8478',
+    bgColor: '#8B7265',
     textColor: '#FFFFFF',
-    bgColorDark: '#5C4A3D',
-    textColorDark: '#D4C4B8',
+    bgColorDark: '#6B5545',
+    textColorDark: '#E0D0C0',
   },
-  // Discovery: Amber - more golden
+  // Discovery: Golden amber - distinct warm tone
   Discovery: {
     label: 'Discovery',
     short: 'Disc',
-    bgColor: '#8B7355',
+    bgColor: '#9C7C3C',
     textColor: '#FFFFFF',
-    bgColorDark: '#6B5530',
-    textColorDark: '#E0C890',
+    bgColorDark: '#8B6B2A',
+    textColorDark: '#F0D890',
   },
-  // Ready: Olive green - more distinct
+  // Ready: Olive green - earthy but visible
   Ready: {
     label: 'Ready',
     short: 'Ready',
-    bgColor: '#5C6B4A',
+    bgColor: '#5A7A45',
     textColor: '#FFFFFF',
-    bgColorDark: '#4A5C38',
-    textColorDark: '#B8D4A0',
+    bgColorDark: '#4A6A35',
+    textColorDark: '#C0E0A0',
   },
   // Constrained: BRIGHT purple - must POP
   Constrained: {
@@ -168,23 +168,23 @@ export const STATE_CONFIG: Record<FlowState, StateConfig> = {
     textColorDark: '#FFFFFF',
     isEmphasis: true,
   },
-  // Doing: Slate blue - more blue
+  // Doing: Steel blue - professional but clear
   Doing: {
     label: 'Doing',
     short: 'Doing',
-    bgColor: '#4A5568',
+    bgColor: '#4A6A8A',
     textColor: '#FFFFFF',
-    bgColorDark: '#3D5070',
-    textColorDark: '#A8C0E0',
+    bgColorDark: '#4A6590',
+    textColorDark: '#B0D0F0',
   },
-  // Done: Green - more distinct from Ready
+  // Done: Forest green - clearly distinct from Ready
   Done: {
     label: 'Done',
     short: 'Done',
-    bgColor: '#4A5D4A',
+    bgColor: '#3A6A45',
     textColor: '#FFFFFF',
-    bgColorDark: '#2D4D35',
-    textColorDark: '#90C4A0',
+    bgColorDark: '#2A5A35',
+    textColorDark: '#A0D4A0',
   },
   // Blocked: BRIGHT red - must POP
   Blocked: {
